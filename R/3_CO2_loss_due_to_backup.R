@@ -19,6 +19,8 @@ Backup_emissions <- function(core.dat,
   t_wf <- core.dat$Windfarm$t_wf
 
   if (0) {
+    # This version reproduces the 3x3 output in the spreadsheet LCA, however
+    # only the fossil_mix counterfactual is ultimately used in the payback time
     L_back_tot <- matrix((p_therm/100) * (24*365) * n_turb * c_turb * (p_back/100) * t_wf,
                          nrow = nrow(E_mat),
                          ncol = length(p_therm),
@@ -27,6 +29,7 @@ Backup_emissions <- function(core.dat,
 
     L_back <- L_back_tot * E_mat
   } else {
+    # Back up emissions assuming fossil_mix counterfactual
     L_back <- (p_therm/100) * (24*365) * n_turb * c_turb * (p_back/100) * t_wf * E_mat["fossil_mix",]
   }
 

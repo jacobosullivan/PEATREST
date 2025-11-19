@@ -177,7 +177,7 @@ res <- cbind(source = c("L_life","L_back","L_fix","L_soil","L_DPOC","L_forest","
 res$source <- factor(res$source, levels = c("L_life","L_back","L_fix","L_soil","L_DPOC","L_forest","L_improvement_tot"))
 
 
-PLOT_RES <- T # if FALSE, plot comparison between R version and Excel version
+PLOT_RES <- F # if FALSE, plot comparison between R version and Excel version
 
 if (PLOT_RES) {
 
@@ -218,7 +218,6 @@ if (PLOT_RES) {
 
   res_comp %>% print(n=Inf)
 
-  ## Large errors in improvement and DOC/POC
   ggplot(res_comp, aes(x = paste(source, estimate), y = (val.R - val.Excel))) +
     geom_bar(stat = "identity") +
     labs(x="") +

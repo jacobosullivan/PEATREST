@@ -10,6 +10,8 @@ CO2_loss_drained(core.dat, AV_indirect, R_tot)
 \item{core.dat}{UI data}
 
 \item{AV_indirect}{Area/Volume of drained peat}
+
+\item{R_tot}{estimated emissions rates}
 }
 \value{
 L_indirect

@@ -137,7 +137,7 @@ run_3PG <- function(t_rotation = 50, # rotation length
                     pF = 0.25, # proportion carbon allocated to foliage
                     N0 = 0, # coefficient for allocation response to nitrogen (NOT USED)
                     R_long = 0, # fine root longevity (NOT USED)
-                    Wl_init = 0.005, # initial foliage biomass
+                    Wl_init = 0.01, # initial foliage biomass # was 0.005; set to 0.01 after age at which leaf longevity impacts dynamics set to zero for simplicity
                     t_seedling_replant = 0, # seedling age at planting
                     SLA = 6, # specific leaf area
                     phi_p = 2880, # average annual photosynthetically active radiation
@@ -176,7 +176,7 @@ run_3PG <- function(t_rotation = 50, # rotation length
 
   res$t <- t
 
-  leaf_long_onset <- 6 # as in spreadsheet: suggest setting to zero!
+  leaf_long_onset <- 0 # as in spreadsheet: suggest setting to zero!
 
   # Initialise 3PG
   res$Wl[1] <- Wl_init
@@ -299,4 +299,44 @@ if (0) { # testing reason for differences due to t_seedling_replant
   lines(out3$res$t, out1$res$Wl, col='green', type='l')
   lines(out0$res$t, out0$res$Wl)
 
+
+  ## Demonstrating peatland restoration model concept:
+  t_rotation <- 200
+  out0 <- run_3PG(t_rotation = t_rotation,
+                  t_seedling_replant = 0,
+                  thin = NULL,
+                  f_E = 0.3,
+                  A0.5 = 80)
+
+  age_at_felling <- 50
+  restoration_time <- 10
+
+  # out0$res <- out0$res %>%
+  #   filter(t >= age_at_felling) %>%
+  #   mutate(t = t - age_at_felling)
+
+  out0$res$NPP_bog <- 0.2
+  out0$res$NPP_bog[out0$res$t < age_at_felling] <- 0
+  out0$res$NPP_bog[out0$res$t >= age_at_felling & out0$res$t < restoration_time + age_at_felling] <- -0.1
+  out0$res$NPP_cum <- 0
+  out0$res$NPP_cum[age_at_felling:nrow(out0$res)] <- cumsum(out0$res$NPP[age_at_felling:nrow(out0$res)])
+  out0$res$NPP_bog_cum <- 0
+  out0$res$NPP_bog_cum[age_at_felling:nrow(out0$res)] <- cumsum(out0$res$NPP_bog[age_at_felling:nrow(out0$res)])
+
+  t_payback <- which(out0$res$NPP_cum - out0$res$NPP_bog_cum < 0)[1]
+
+
+  p1 <- ggplot(out0$res, aes(x=t, y=NPP)) +
+    geom_line(col="green") +
+    geom_ribbon(aes(ymin = 0, ymax = NPP), alpha=0.2, fill="green") +
+    geom_line(aes(y=NPP_bog), col="red") +
+    geom_ribbon(aes(ymin = 0, ymax = NPP_bog), alpha=0.2, fill="red") +
+    geom_vline(xintercept = age_at_felling, linetype=2) +
+    geom_vline(xintercept = t_payback) +
+    scale_x_continuous(limits=c(0, 1.1*t_payback)) +
+    theme_bw()
+
+  png("../peatland_restoration_LCA.png", width=10, height=8, units="cm", res=300)
+  p1
+  dev.off()
 }

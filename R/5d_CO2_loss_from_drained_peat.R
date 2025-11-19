@@ -3,61 +3,25 @@
 #' CO2_loss_drained
 #' @param core.dat UI data
 #' @param AV_indirect Area/Volume of drained peat
+#' @param R_tot estimated emissions rates
 #' @return L_indirect
 #' @export
 CO2_loss_drained <- function(core.dat, AV_indirect, R_tot) {
 
-  # Wrapper function for the CO2_loss_drained0() module
   # THIS FUNCTION...
 
-  L_drainage <- CO2_loss_drained0(pC_dry_peat = core.dat$Peatland$pC_dry_peat,
-                                  BD_dry_soil = core.dat$Peatland$BD_dry_soil,
-                                  R_tot = R_tot,
-                                  peat_type = core.dat$Peatland$peat_type,
-                                  restore_hydr_in = core.dat$Site.restoration$restore_hydr_in,
-                                  restore_hab_in = core.dat$Site.restoration$restore_hab_in,
-                                  A_indirect = AV_indirect$Total$a,
-                                  V_indirect = AV_indirect$Total$v,
-                                  t_wf = core.dat$Windfarm$t_wf,
-                                  t_restore = core.dat$Bog.plants$t_restore)
-
-  L_indirect <- c(Exp = L_drainage$L_drained$Tot[1] - L_drainage$L_undrained$Tot[1],
-                  Min = min(L_drainage$L_drained$Tot[2:3] - L_drainage$L_undrained$Tot[2:3]),
-                  Max = max(L_drainage$L_drained$Tot[2:3] - L_drainage$L_undrained$Tot[2:3]))
-
-  L_indirect <- list(L_drained = L_drainage$L_drained,
-                     L_undrained = L_drainage$L_undrained,
-                     L_indirect = L_indirect)
-
-  return(L_indirect)
-}
-
-#' CO2_loss_drained
-#' @param pC_dry_peat Carbon content of dry peat
-#' @param BD_dry_soil Dry soil bulk density
-#' @param R_tot ECOSSE emissions factors
-#' @param peat_type Select acid bog or fen
-#' @param restore_hydr_in Select hydrology restoration
-#' @param restore_hab_in Select habitat restoration
-#' @param A_indirect Area peat drained
-#' @param V_indirect Volume peat drained
-#' @param t_wf Windfarm life time
-#' @param t_restore Time to restoration after decomissioning
-#' @return Net CO2 loss from drained peat
-#' @export
-CO2_loss_drained0 <- function(pC_dry_peat,
-                              BD_dry_soil,
-                              R_tot,
-                              peat_type,
-                              restore_hydr_in,
-                              restore_hab_in,
-                              A_indirect,
-                              V_indirect,
-                              t_wf,
-                              t_restore) {
-
-  # THIS FUNCTION...
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
+
+  # Extract input variables for easy access
+  pC_dry_peat <- core.dat$Peatland$pC_dry_peat
+  BD_dry_soil <- core.dat$Peatland$BD_dry_soil
+  peat_type <- core.dat$Peatland$peat_type
+  restore_hydr_in <- core.dat$Site.restoration$restore_hydr_in
+  restore_hab_in <- core.dat$Site.restoration$restore_hab_in
+  A_indirect <- AV_indirect$Total$a
+  V_indirect <- AV_indirect$Total$v
+  t_wf <- core.dat$Windfarm$t_wf
+  t_restore <- core.dat$Bog.plants$t_restore
 
   if (peat_type[1] == 1) { # Acid bog selected
     D_f <- 178
@@ -94,14 +58,17 @@ CO2_loss_drained0 <- function(pC_dry_peat,
   if (any(restore_hab_in == 1 | restore_hydr_in == 1)) {
     # replace non-restored instances with results without restoration
     L_drained$Tot[restore_hab_in == 1 | restore_hydr_in == 1] <- L_drained_no_rest$Tot[restore_hab_in == 1 | restore_hydr_in == 1]
-    # L_drained$CO2[restore_hab_in == 1 | restore_hydr_in == 1] <- 0
-    # L_drained$CH4[restore_hab_in == 1 | restore_hydr_in == 1] <- 0
-
     L_undrained$Tot[restore_hab_in == 1 | restore_hydr_in == 1] <- L_undrained_no_rest$Tot[restore_hab_in == 1 | restore_hydr_in == 1]
-    # L_undrained$CO2[restore_hab_in == 1 | restore_hydr_in == 1] <- 0
-    # L_undrained$CH4[restore_hab_in == 1 | restore_hydr_in == 1] <- 0
   }
 
-  return(list(L_drained = L_drained,
-              L_undrained = L_undrained))
+  L_indirect <- c(Exp = L_drained$Tot[1] - L_undrained$Tot[1],
+                  Min = min(L_drained$Tot[2:3] - L_undrained$Tot[2:3]),
+                  Max = max(L_drained$Tot[2:3] - L_undrained$Tot[2:3]))
+
+  L_indirect <- list(L_drained = L_drained,
+                     L_undrained = L_undrained,
+                     L_indirect = L_indirect)
+
+  return(L_indirect)
 }
+

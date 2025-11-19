@@ -24,7 +24,7 @@ Loss_of_CO2_fix_pot <- function(core.dat,
   A_indirect <- AV_indirect$Total$a
 
   C_accumultion_per_area <- G_bog * (t_wf + t_restore) * CO2_C # convert into units CO2
-  L_fix <- C_accumultion_per_area * (A_direct + A_indirect)/10000 # normalisation by 10000 converts from m3 to ha
+  L_fix <- C_accumultion_per_area * (A_direct + A_indirect)/10000 # normalisation by 10000 converts from m2 to ha
 
   return(L_fix)
 }
