@@ -17,6 +17,11 @@ forestry.dat <- dat$forestry.dat
 construct.dat <- dat$construct.dat
 rm(dat)
 
+#################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
+core.dat$Bog.plants$t_restore_hydr <- c(Exp = 5, Min = 2, Max = 10) # time to restoration of hydrology [yr]
+core.dat$Bog.plants$n_restore_hydr <- c(Exp = 3, Min = 2, Max = 4) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+#################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
+
 ## Counterfactuals in matrix form for fast multiplication
 E_mat <- matrix(c(core.dat$Counterfactual$E_coal,
                   core.dat$Counterfactual$E_grid_mix,
@@ -124,7 +129,7 @@ R_windspeed_all <- Wind_speed_ratios(core.dat = core.dat,
 
 if (core.dat$Windfarm$p_cap_in[1] == 2) { # capacity factor calculated from forestry module
 
-  p_cap <- p_cap_forestry(core.dat = core.dat,
+  p_cap <- p_cap_windspeed(core.dat = core.dat,
                           forestry.dat = forestry.dat,
                           R_windspeed_all = R_windspeed_all)
   n_turb <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_turb")

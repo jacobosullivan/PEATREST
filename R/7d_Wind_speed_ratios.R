@@ -28,18 +28,21 @@ Wind_speed_ratios <- function(core.dat,
                      FUN = function(x) sqrt(x*10000))
 
   # Height of original forestry at harvesting
+  # Age at harvesting and soil type passed to growth and yield table function
   avg_height_felled <- lapply(list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv"),
                                       l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
                                       func = "c"),
                               FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$avg_height)
 
   # Height of replanted forestry at decomissioning
+  # Age given by windfarm liftime + age of seedling at plantation - length of fallow period
+  # This and soil type are passed to the growth and yield table function
   avg_height_replant <- lapply(list_op(l1 = list_op(l1 = t_wf,
-                                                      l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_seedling_replant"),
-                                                      l3 = lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "t_replant"), FUN = function(x) -x),
-                                                      func = "+"),
-                                         l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
-                                         func = "c"),
+                                                    l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_seedling_replant"),
+                                                    l3 = lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "t_replant"), FUN = function(x) -x),
+                                                    func = "+"),
+                                       l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
+                                       func = "c"),
                                  FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$avg_height)
 
   # Height of original forestry at decomissioning IF NOT FELLED (accounting for 50 year rotation)
@@ -57,6 +60,7 @@ Wind_speed_ratios <- function(core.dat,
                                 return(x)
                               })
 
+  # Age at decomissioning if not felled and soil type passed to growth and yield table function
   avg_height_not_felled <- lapply(list_op(l1 = t_harv_not_felled,
                                           l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
                                           func = "c"),
@@ -182,14 +186,17 @@ Wind_speed_ratios <- function(core.dat,
                                   ws_IBL_replant = remMinMax(ws_IBL_replant),
                                   zpd_forest = remMinMax(zpd_forest))
 
+  # wind speed ratio without felling
   ratio_no_fell <- list_op(l1 = ws_hub_forest,
                            l2 = ws_hub_upwind,
                            func = "/")
 
+  # wind speed ratio with felling
   ratio_felled <- list_op(l1 = ws_hub_felled,
                           l2 = ws_hub_upwind,
                           func = "/")
 
+  # wind speed ratio with replanting
   ratio_felled_replant <- list_op(l1 = ws_hub_replant,
                                   l2 = ws_hub_upwind,
                                   func = "/")
@@ -212,10 +219,15 @@ remMinMax <- function(y) {
 }
 
 getIBL <- function(la, lb, lc, ld, max_HBL = 5000) {
+
+  # THIS FUNCTION...
+
+  # H_IBL = ((0.75 + 0.03 * log(R_upwind / R_surface)) * R_surface * (D_width / R_surface)^0.8) + DeltaH_zero
   log_r_ratio <- lapply(list_op(l1 = la,
                                 l2 = lb,
                                 func = "/"),
                         FUN = function(x) 0.75 + 0.03 * log(x))
+
   w_r_ratio_p0.8 <- lapply(list_op(l1 = lc,
                                    l2 = lb,
                                    func = "/"),
@@ -236,6 +248,9 @@ getIBL <- function(la, lb, lc, ld, max_HBL = 5000) {
 
 getWS_upwind <- function(h1, r_upstream, von_karman = 0.4) {
 
+  # THIS FUNCTION...
+
+  # V_upwind(rel) = log(H / R_upwind) / k_vonKarmen
   ws <- lapply(seq(length(h1)),
          FUN = function(x) {
            res <- log(round(h1[[x]]) / r_upstream[[x]]) / von_karman
@@ -248,11 +263,15 @@ getWS_upwind <- function(h1, r_upstream, von_karman = 0.4) {
 
 getWS_forest <- function(h1, h_IBL_forest, avg_height_not_felled, r_upstream, r_forest, ws_IBL_forest, zpd_forest, von_karman = 0.4, alpha = 4) {
 
+  # THIS FUNCTION...
+  # Remove rounding of heights. This was required to reproduce spreadsheet result
+
   suppressWarnings({ # NaNs can be produces, however these should be filtered by conditionals
     ws <- getWS_upwind(lapply(h1,
                               FUN = round),
                        r_upstream) # this is true if h1 > h_IBL_forest
 
+    # V_downwind(rel) = V_HIBL * log((H - DeltaH_zero)/R_forest) / log((H_IBL - DeltaH_zero)/R_forest)
     ws2 <- list_op(l1 = list_op(l1 = ws_IBL_forest,
                                 l2 = lapply(list_op(l1 = list_op(l1 = lapply(h1,
                                                                              FUN = round),
@@ -270,6 +289,8 @@ getWS_forest <- function(h1, h_IBL_forest, avg_height_not_felled, r_upstream, r_
                                FUN = log),
                    func = "/") # this is true if h1 > avg_height_not_felled
 
+    # JDEBUG: This doesn't seem to match theory, might be a spreadsheet error...
+    # In the paper, this is V_HIBL + exp()..., here it is  V_HIBL * exp()
     ws3 <- list_op(l1 = list_op(l1 = ws_IBL_forest,
                                 l2 = lapply(list_op(l1 = list_op(l1 = avg_height_not_felled,
                                                                  l2 = zpd_forest,

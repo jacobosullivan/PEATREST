@@ -10,7 +10,8 @@ Lifetime_emissions <- function(core.dat,
                                construct.dat,
                                E_concrete=0.316) {
 
-  # THIS FUNCTION...
+  ## This function computes the emissions associated with production, transportation, erection, operation and decomissioning of the windfarm
+  ## either based on user inputs or regression coefficients
 
   if (core.dat$Windfarm$L_life_in[1] == 2) { # lifetime emissions calculated from linear regression coefficients
 

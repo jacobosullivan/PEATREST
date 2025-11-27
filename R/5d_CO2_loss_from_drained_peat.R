@@ -71,4 +71,3 @@ CO2_loss_drained <- function(core.dat, AV_indirect, R_tot) {
 
   return(L_indirect)
 }
-

@@ -47,3 +47,21 @@ list_op <- function(l1, l2, l3 = NULL, func) {
 
   return(res)
 }
+
+#' rest_dyn_mod flexible convergent function for modelling restoration dynmaics
+#' @param t sequence of years for restoration phase
+#' @param n shape parameter (user input)
+#' @param ymin value of y at t=0 (drained rate)
+#' @param ymax value of y at t=max(t) (restored rate)
+#' @param convThresh proportion of ymax at which convergence assumed to occur (since y attains ymax at t=Inf)
+#' @return rate sequence
+#' @export
+rest_dyn_mod <- function(t,n,ymin,ymax,convThresh=0.99) {
+
+  # Bounded flexible function implemented in absence of mechanistic model for peatland restoration
+
+  aa <- -log(1-convThresh)/(max(t)^n) # allows control over value of x at convergence point
+  rate <- ymax + (ymin - ymax) * exp(-aa*(t^n))
+
+  return(rate)
+}

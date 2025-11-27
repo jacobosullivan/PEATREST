@@ -32,20 +32,32 @@ CO2_loss_DOC_POC <- function(core.dat,
     L_CH4_drain_rest <- L_indirect$L_drained$CH4 - L_indirect$L_undrained$CH4
     L_CH4_drain_rest[L_CH4_drain_rest<0] <- 0
 
-    L_CO2_improved <- list_op(l1 = L_improvement$E_CO2_aft, l2 = L_improvement$E_CO2_bfr, func = "-")
-    L_CO2_improved <- lapply(L_CO2_improved, FUN = function(x) {
+    # Get difference in emissions before/after improvement
+    L_CO2_improved <- list_op(l1 = L_improvement$E_CO2_aft, 
+                              l2 = L_improvement$E_CO2_bfr, 
+                              func = "-")
+
+    L_CO2_improved <- lapply(L_CO2_improved, FUN = function(x) { # remove negative values
                         x[x<0] <- 0
                         return(x)
                       })
-    L_CH4_improved <- list_op(l1 = L_improvement$E_CH4_aft, l2 = L_improvement$E_CH4_bfr, func = "-")
-    L_CH4_improved <- lapply(L_CH4_improved, FUN = function(x) {
+
+    L_CH4_improved <- list_op(l1 = L_improvement$E_CH4_aft,
+                              l2 = L_improvement$E_CH4_bfr, 
+                              func = "-")
+
+    L_CH4_improved <- lapply(L_CH4_improved, FUN = function(x) { # remove negative values
       x[x<0] <- 0
       return(x)
     })
 
-    L_CO2_improved$Restored <- L_CO2_drain_rest
-    L_CH4_improved$Restored <- L_CH4_drain_rest
-    L_C_Tot <- colSums(bind_rows(L_CO2_improved) / CO2_C) + colSums(bind_rows(L_CH4_improved) * pC_CH4 / CH4_CO2) #
+    L_CO2_improved$Restored <- L_CO2_drain_rest # NULL if not restored
+    L_CH4_improved$Restored <- L_CH4_drain_rest # NULL if not restored
+    
+    # Compute totals
+    L_C_Tot <- colSums(bind_rows(L_CO2_improved) / CO2_C) + colSums(bind_rows(L_CH4_improved) * pC_CH4 / CH4_CO2)
+
+    # Compute D/POC loss via empirically estimated ratios to total gaseous loss
     L_C_DOC <- L_C_Tot * pC_DOC / 100
     L_C_DOC[L_C_DOC<0] <- 0
     L_C_POC <- L_C_Tot * pC_POC / 100
@@ -55,7 +67,7 @@ CO2_loss_DOC_POC <- function(core.dat,
     L_POC <- L_C_POC * (pPOC_CO2 / 100) * CO2_C
 
     L_DPOC <- L_DOC + L_POC
-  } else { # if not restoring, DOC and POC are already accounted for (all C lost)
+  } else { # if not restoring, DOC and POC are already accounted for (assuming all C lost)
     L_DPOC <- c(Exp = 0, Min = 0, Max = 0)
   }
 

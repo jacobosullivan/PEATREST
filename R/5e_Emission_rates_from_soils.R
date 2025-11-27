@@ -29,6 +29,7 @@ IPCC_CH4_F <- function(CH4_CO2) {
 #' ECOSSR_CO2_AB
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
+#' @param CO2_C Molecular weight ratio C to CO2
 #' @return CO2 emissions rate ECOSSE Acid bog
 #' @export
 ECOSSR_CO2_AB <- function(CO2_C, d_wt, T_air) {
@@ -38,6 +39,7 @@ ECOSSR_CO2_AB <- function(CO2_C, d_wt, T_air) {
 #' ECOSSR_CH4_AB
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
+#' @param CH4_CO2 CH4 to CO2 conversion factor
 #' @return CH4 emissions rate ECOSSE Acid bog
 #' @export
 ECOSSR_CH4_AB <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
@@ -47,6 +49,7 @@ ECOSSR_CH4_AB <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
 #' ECOSSR_CO2_F
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
+#' @param CO2_C Molecular weight ratio C to CO2
 #' @return CO2 emissions rate ECOSSE Fen
 #' @export
 ECOSSR_CO2_F <- function(CO2_C, d_wt, T_air) {
@@ -56,6 +59,7 @@ ECOSSR_CO2_F <- function(CO2_C, d_wt, T_air) {
 #' ECOSSR_CH4_F
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
+#' @param CH4_CO2 CH4 to CO2 conversion factor
 #' @return CO2 emissions rate ECOSSE Fen
 #' @export
 ECOSSR_CH4_F <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
@@ -99,7 +103,8 @@ Emissions_rates_soils <- function(core.dat,
 
   } else { # Site specific calculation using ECOSSE method
 
-    d_wt_drained <- apply(cbind(V_indirect/A_indirect,d_wt), MAR=1, FUN=max)
+    d_wt_drained <- apply(cbind(V_indirect/A_indirect,d_wt), MAR=1, FUN=max)[c(1,3,2)] # re-order Min/Max
+    names(d_wt_drained) <- c("Exp", "Min", "Max")
 
     if (peat_type[1] == 1) { # Acid bog selected
 

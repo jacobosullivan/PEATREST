@@ -40,13 +40,20 @@ AV_peat_drained <- function(core.dat, construct.dat) {
     n_turb <- map(construct.dat, "n_turb")
 
     # Sum total length/width of foundations + hardstandings by area
-    l_fh <- list_op(l_f, l_h, func = "+")
-    w_fh <- list_op(w_f, w_h, func = "+")
+    l_fh <- list_op(l1 = l_f, 
+                    l2 = l_h, 
+                    func = "+")
+    w_fh <- list_op(l1 = w_f, 
+                    l2 = w_h, 
+                    func = "+")
 
     d_f <- map(construct.dat, "d_peat_rem_found")
     d_h <- map(construct.dat, "d_peat_rem_hardstand")
 
-    d_fh <- list_op(d_f, d_h, func="max")
+    # Extract maximum depth (foundations or hardstandings)
+    d_fh <- list_op(l1 = d_f, 
+                    l2 = d_h, 
+                    func="max")
   }
 
   AV_indirect <- AV_peat_drained0(drain_ext = core.dat$Peatland$drain_ext,
@@ -122,17 +129,22 @@ drainage_fh <- function(drain_ext,
     drainage_per_turb <- lapply(Map(list, fh_dims$l, fh_dims$w), FUN=function(x) area_drained(drain_ext, unlist(x[[1]]), unlist(x[[2]])))
 
     # multiply by n_turb
-    drainage_wf <- list_op(drainage_per_turb, fh_dims$n, func = "*")
+    drainage_wf <- list_op(l1 = drainage_per_turb, 
+                           l2 = fh_dims$n, 
+                           func = "*")
 
     # sum across areas
     area_drained_fh <- Reduce("+", drainage_wf)
 
-    # compute volume (unclear why factor 2) and sum
-    vol_drained_fh <- Reduce("+", list_op(drainage_wf, fh_dims$d, func = "*0.5"))
+    # compute volume (factor 2 due to assumption of a triangular depth profile) and sum
+    vol_drained_fh <- Reduce("+", list_op(l1 = drainage_wf, 
+                                          l2 = fh_dims$d, 
+                                          func = "*0.5"))
 
   } else { # dimensions passed as vector: single area/areas pooled
     area_drained_fh <- area_drained(drain_ext, fh_dims$l, fh_dims$w) * fh_dims$n
-
+    
+    # compute volume (factor 2 due to assumption of a triangular depth profile)
     vol_drained_fh <- 0.5 * area_drained_fh * fh_dims$d
   }
 

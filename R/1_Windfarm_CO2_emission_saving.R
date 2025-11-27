@@ -10,7 +10,10 @@ Windfarm_output <- function(p_cap,
                             n_turb,
                             c_turb,
                             forestry.dat = NULL) {
-  ## THIS FUNCTION...
+
+  ## This function will estimate annual windfarm output [MW] as a function
+  ## of the number of turbines, maximum turbine capacity [MW] and the power
+  ## capacity, either user input, or estimated from relative windspeeds
 
   # Calculate annual energy output
   if (class(p_cap) == "list") { # power capacity computed for each forestry area
@@ -22,6 +25,7 @@ Windfarm_output <- function(p_cap,
     }
     names(c_turb_area) <- names(p_cap)
 
+    # e_out = (24 * 365) * (p_cap/100) * n_turb * c_turb
     e_out <- colSums(bind_rows(lapply(list_op(l1 = n_turb,
                                               l2 = c_turb_area,
                                               l3 = p_cap,
@@ -41,9 +45,11 @@ Windfarm_output <- function(p_cap,
 #' @export
 Windfarm_emissions_saving <- function(e_out,
                                       E_mat) {
-  ## THIS FUNCTION...
+  
+  ## This function computes the saved emissions as a function of the windfarm power output [MW]
+  ## and the user input counterfactuals (emissions factors) [t CO2 MW]
 
-  ## Calculate emissions savings
+  # Calculate emissions savings
   e_out_mat <- matrix(e_out,
                       nrow = nrow(E_mat),
                       ncol = length(e_out),
@@ -54,15 +60,16 @@ Windfarm_emissions_saving <- function(e_out,
   return(S_fuel)
 }
 
-#' getP_cap
+#' p_cap_windspeed
 #' @param core.dat UI data
 #' @param forestry.dat UI forestry data
 #' @param R_windspeed_all estimated windspeed ratios
 #' @return power capacity
 #' @export
-p_cap_forestry <- function(core.dat, forestry.dat, R_windspeed_all) {
+p_cap_windspeed <- function(core.dat, forestry.dat, R_windspeed_all) {
 
-  # THIS FUNCTION...
+  ## This function computes the wind turbine power capacity as a function of 
+  ## relative windspeeds [ms-1/ms-1]
 
   # Extract and restructure data for easy access
   windspeed <- list()
@@ -103,6 +110,7 @@ p_cap_forestry <- function(core.dat, forestry.dat, R_windspeed_all) {
                                                                             Max = -4291.9)
   }
 
+  # P_act = a * V_upwind * r_wind + b
   P_act <- list_op(l1 = list_op(l1 = slope_pow_curve,
                                 l2 = windspeed,
                                 l3 = R_windspeed,
@@ -110,6 +118,7 @@ p_cap_forestry <- function(core.dat, forestry.dat, R_windspeed_all) {
                    l2 = int_pow_curve,
                    func = "+")
 
+  # p_cap = (100 - t_down) * (P_act / P_max)
   p_cap <- list_op(l1 = list_op(l1 = lapply(t_down, FUN = function(x) 100 - x),
                                 l2 = P_act,
                                 func = "*"),

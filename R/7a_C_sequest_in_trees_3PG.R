@@ -74,6 +74,9 @@ C_sequest_in_trees <- function(core.dat,
 
   # 3PG is run using a nested, vectorised approach for efficiency
   # Nesting applies run_3PG to a) Each area, b) Each of Exp, Min, Max
+  # run_3PG will internally estimate the various total sequestration values
+  # These are stored in the output as NPP_0, NPP_01
+  # Full trajectories are also returned though not used here
 
   ## Model pre-wind farm forestry
   out <- apply(parms_3PG_by_area, # remove t_seedling_replant (use default value of 0 for modelling pre-wf forestry)
@@ -86,6 +89,7 @@ C_sequest_in_trees <- function(core.dat,
 
   # SHOULD THIS BE HANDLED BY SIMPLY SUBSETTING THE ABOVE INSTEAD OF RE-RUNNING?
   ## Model replanted forestry
+  ## Understory sequestration during fallow period is currently missing!!!
   out_replant <- apply(parms_3PG_by_area, # remove t_seedling_replant (use default value of 0 for modelling pre-wf forestry)
                    MAR = 3,
                    FUN = function(y) {
@@ -107,23 +111,26 @@ C_sequest_in_trees <- function(core.dat,
     return(x)
   }
 
+  # Extract sequestration potential of felled forestry (NPP_01) from 3PG output
   seq_pot <- lapply(list_op(l1 = map(map(out, .f = "Exp"), .f = "NPP_01"),
-                              l2 = map(map(out, .f = "Min"), .f = "NPP_01"),
-                              l3 = map(map(out, .f = "Max"), .f = "NPP_01"),
-                              func = "c"),
-                      FUN = getExpMinMax)
+                            l2 = map(map(out, .f = "Min"), .f = "NPP_01"),
+                            l3 = map(map(out, .f = "Max"), .f = "NPP_01"),
+                            func = "c"),
+                    FUN = getExpMinMax)
 
+  # Extract total carbon content of forestry at harvesting (NPP_0) from 3PG output
   C_tot <- lapply(list_op(l1 = map(map(out, .f = "Exp"), .f = "NPP_0"),
-                        l2 = map(map(out, .f = "Min"), .f = "NPP_0"),
-                        l3 = map(map(out, .f = "Max"), .f = "NPP_0"),
-                        func = "c"),
+                          l2 = map(map(out, .f = "Min"), .f = "NPP_0"),
+                          l3 = map(map(out, .f = "Max"), .f = "NPP_0"),
+                          func = "c"),
                 FUN = getExpMinMax)
 
+  # Extract sequestration potential of replanted forestry (NPP_01) from 3PG output
   seq_pot_replant <- lapply(list_op(l1 = map(map(out_replant, .f = "Exp"), .f = "NPP_01"),
-                                l2 = map(map(out_replant, .f = "Min"), .f = "NPP_01"),
-                                l3 = map(map(out_replant, .f = "Max"), .f = "NPP_01"),
-                                func = "c"),
-                        FUN = getExpMinMax)
+                                    l2 = map(map(out_replant, .f = "Min"), .f = "NPP_01"),
+                                    l3 = map(map(out_replant, .f = "Max"), .f = "NPP_01"),
+                                    func = "c"),
+                            FUN = getExpMinMax)
 
   return(list(seq_pot = seq_pot,
               C_tot = C_tot,
@@ -176,7 +183,7 @@ run_3PG <- function(t_rotation = 50, # rotation length
 
   res$t <- t
 
-  leaf_long_onset <- 0 # as in spreadsheet: suggest setting to zero!
+  leaf_long_onset <- 0 # 6 as in spreadsheet: suggest setting to zero!
 
   # Initialise 3PG
   res$Wl[1] <- Wl_init

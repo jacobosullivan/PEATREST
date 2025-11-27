@@ -124,7 +124,7 @@ R_windspeed_all <- Wind_speed_ratios(core.dat = core.dat,
 
 if (core.dat$Windfarm$p_cap_in[1] == 2) { # capacity factor calculated from forestry module
 
-  p_cap <- p_cap_forestry(core.dat = core.dat,
+  p_cap <- p_cap_windspeed(core.dat = core.dat,
                           forestry.dat = forestry.dat,
                           R_windspeed_all = R_windspeed_all)
   n_turb <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_turb")
@@ -216,7 +216,9 @@ if (PLOT_RES) {
                                      values_to = "val.Excel"),
                         by = c("source", "estimate"))
 
-  res_comp %>% print(n=Inf)
+  res_comp %>%
+    mutate(diff = val.R - val.Excel) %>%
+    print(n=Inf)
 
   ggplot(res_comp, aes(x = paste(source, estimate), y = (val.R - val.Excel))) +
     geom_bar(stat = "identity") +

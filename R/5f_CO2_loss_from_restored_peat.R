@@ -1,0 +1,117 @@
+## 5f. CO2 loss from restored peatland
+
+#' CO2_loss_rest_phase
+#' @param core.dat UI data
+#' @param AV_indirect Area/Volume of drained peat
+#' @param R_tot estimated emissions rates
+#' @return L_indirect
+#' @export
+CO2_loss_rest_phase <- function(core.dat, AV_indirect, R_tot) {
+
+  ## This function will estimate the emissions from the site following harvesting and restoration interventions
+  ## assuming a non-linear restoration of ecosystem function parameterised by the user
+
+  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  conv_val <- 0.99 # convergence value required by arbitrary convergent function
+
+  # Extract input variables for easy access
+  peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
+  A_indirect <- AV_indirect$Total$a
+  t_restore_hydr <- core.dat$Bog.plants$t_restore_hydr # NEW UI VARIABLE - time to restoration of hydrology
+  n_restore_hydr <- core.dat$Bog.plants$n_restore_hydr # NEW UI VARIABLE - shape parameter for restoration of hydrology
+
+  ## Compute emissions rates from deforested, unrestored peatland
+  A_t <- (A_indirect / 10000)
+  D_f <- 0 # Assume D_f = 0 for drained peats
+  pD_f <- D_f / 365
+
+  CO2_drained <- A_t * ((R_tot$R_CO2_drained * pD_f) + (R_tot$R_CO2_drained * (1 - pD_f)))
+  CH4_drained <- A_t * ((R_tot$R_CH4_drained * pD_f) + (R_tot$R_CH4_drained * (1 - pD_f)))
+
+  ## Compute emissions rates from deforested, restored peatland
+
+  if (peat_type[1] == 1) { # Acid bog selected
+    D_f <- 178
+  } else {
+    D_f <- 169
+  }
+  pD_f <- D_f / 365
+
+  CO2_restored <- A_t * ((R_tot$R_CO2_undrained * pD_f) + (R_tot$R_CO2_undrained * (1 - pD_f)))
+  CH4_restored <- A_t * ((R_tot$R_CH4_undrained * pD_f) + (R_tot$R_CH4_undrained * (1 - pD_f)))
+
+
+  # t <- seq(0,t_restore_hydr[x], length.out=101)
+  # aa <- -log(1-conv_val)/(max(t)^n_restore_hydr[2])
+  # rate <- CO2_restored[x] + (CO2_drained[x] - CO2_restored[x]) * exp(-aa*(t^n_restore_hydr[2]))
+  # lines(t, rate, type='l')
+
+  ## Interpolate emissions across restoration phase
+  L_CO2_rest_phase <- lapply(seq(CO2_drained),
+                             FUN = function(x) {
+                               rest_dyn_mod(t = 0:t_restore_hydr[x],
+                                            n = n_restore_hydr[x],
+                                            ymin = CO2_drained[x],
+                                            ymax = CO2_restored[x],
+                                            convThresh = conv_val)
+                             })
+
+  L_CH4_rest_phase <- lapply(seq(CO2_drained),
+                             FUN = function(x) {
+                               rest_dyn_mod(t = 0:t_restore_hydr[x],
+                                            n = n_restore_hydr[x],
+                                            ymin = CH4_drained[x],
+                                            ymax = CH4_restored[x],
+                                            convThresh = conv_val)
+                             })
+
+  names(L_CO2_rest_phase) <- c("Exp", "Min", "Max")
+  names(L_CH4_rest_phase) <- c("Exp", "Min", "Max")
+
+  L_peat_rest_phase <- list(Tot = list_op(l1 = L_CO2_rest_phase,
+                                          l2 = L_CH4_rest_phase,
+                                          func = "+"),
+                            CO2 = L_CO2_rest_phase,
+                            CH4 = L_CH4_rest_phase)
+
+  if (1) {
+    par(mfrow=c(1,3))
+    plot(x=seq(max(t_restore_hydr)),
+         y=rep(max(unlist(L_peat_rest_phase$CO2)), max(t_restore_hydr)),
+         xlim=c(0,max(t_restore_hydr)),
+         ylim=c(min(unlist(L_peat_rest_phase$CO2)),max(unlist(L_peat_rest_phase$CO2))),
+         xlab="Time since restoration [yr]",
+         ylab="Total CO2 emissions [tCO2]",
+         type='n')
+    for (i in 1:length(L_peat_rest_phase$CO2)) {
+      lines(x=0:t_restore_hydr[i],
+            y=L_peat_rest_phase$CO2[[i]])
+    }
+
+    plot(x=seq(max(t_restore_hydr)),
+         y=rep(max(unlist(L_peat_rest_phase$CH4)), max(t_restore_hydr)),
+         xlim=c(0,max(t_restore_hydr)),
+         ylim=c(min(unlist(L_peat_rest_phase$CH4)),max(unlist(L_peat_rest_phase$CH4))),
+         xlab="Time since restoration [yr]",
+         ylab="Total CH4 emissions [eq. tCO2]",
+         type='n')
+    for (i in 1:length(L_peat_rest_phase$CH4)) {
+      lines(x=0:t_restore_hydr[i],
+            y=L_peat_rest_phase$CH4[[i]])
+    }
+
+    plot(x=seq(max(t_restore_hydr)),
+         y=rep(max(unlist(L_peat_rest_phase$Tot)), max(t_restore_hydr)),
+         xlim=c(0,max(t_restore_hydr)),
+         ylim=c(min(unlist(L_peat_rest_phase$Tot)),max(unlist(L_peat_rest_phase$Tot))),
+         xlab="Time since restoration [yr]",
+         ylab="Total gaseous C emissions [eq. tCO2]",
+         type='n')
+    for (i in 1:length(L_peat_rest_phase$Tot)) {
+      lines(x=0:t_restore_hydr[i],
+            y=L_peat_rest_phase$Tot[[i]])
+    }
+  }
+
+  return(L_peat_rest_phase)
+}

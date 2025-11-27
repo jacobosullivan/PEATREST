@@ -112,13 +112,17 @@ removal_f <- function(f_dims) {
                                                                 d = unlist(x[[5]])))
 
     # multiply by n_turb
-    removal_f <- list_op(removal_per_turb, f_dims$n, func = "*")
+    removal_f <- list_op(l1 = removal_per_turb, 
+                         l2 = f_dims$n, 
+                         func = "*")
 
     # sum across areas
     area_removed_f <- Reduce("+", removal_f)
 
     # compute volume (unclear why factor 2) and sum
-    vol_removed_f <- Reduce("+", list_op(removal_f, f_dims$d, func = "*"))
+    vol_removed_f <- Reduce("+", list_op(l1 = removal_f, 
+                                         l2 = f_dims$d, 
+                                         func = "*"))
 
   } else { # dimensions passed as vector: single area/areas pooled
     area_removed_f <- removal_for_turb(f_dims$l_s, f_dims$w_s, f_dims$l_b, f_dims$w_b, f_dims$d) * f_dims$n
@@ -153,13 +157,16 @@ removal_h <- function(h_dims) {
                                                                 d = unlist(x[[5]])))
 
     # multiply by n_turb
-    removal_h <- list_op(removal_per_turb, h_dims$n, func = "*")
+    removal_h <- list_op(l1 = removal_per_turb,
+                         h_dims$n, 
+                         func = "*")
 
     # sum across areas
     area_removed_h <- Reduce("+", removal_h)
 
-    # compute volume (unclear why factor 2) and sum
-    vol_removed_h <- Reduce("+", list_op(removal_h, h_dims$d, func = "*"))
+    # compute volume and sum
+    vol_removed_h <- Reduce("+", list_op(l1 = removal_h, 
+                                         l2 = h_dims$d, func = "*"))
 
   } else { # dimensions passed as vector: single area/areas pooled
     area_removed_h <- removal_for_turb(h_dims$l_s, h_dims$w_s, h_dims$l_b, h_dims$w_b, h_dims$d) * h_dims$n
