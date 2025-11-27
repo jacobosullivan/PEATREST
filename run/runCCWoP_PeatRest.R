@@ -18,8 +18,9 @@ construct.dat <- dat$construct.dat
 rm(dat)
 
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
-core.dat$Bog.plants$t_restore_hydr <- c(Exp = 5, Min = 2, Max = 10) # time to restoration of hydrology [yr]
-core.dat$Bog.plants$n_restore_hydr <- c(Exp = 3, Min = 2, Max = 4) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+core.dat$Site.restoration$t_restore_hydr <- c(Exp = 10, Min = 8, Max = 12) # time to restoration of hydrology [yr]
+core.dat$Site.restoration$n_restore_hydr <- c(Exp = 2, Min = 2, Max = 2) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+core.dat$Site.restoration$t_fallow <- c(Exp = 5, Min = 3, Max = 7) # time between harvesting and restoration [yr]
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
 
 ## Counterfactuals in matrix form for fast multiplication
@@ -35,29 +36,29 @@ E_mat <- matrix(c(core.dat$Counterfactual$E_coal,
 ####################### Carbon loss due to turbine life ########################
 ################################################################################
 
-# L_life <- Lifetime_emissions(core.dat = core.dat,
-#                              construct.dat = construct.dat)
+L_life <- Lifetime_emissions(core.dat = core.dat,
+                             construct.dat = construct.dat)
 
 ################################################################################
 ########################## Carbon loss due to back up ##########################
 ################################################################################
 
-# L_back <- Backup_emissions(core.dat = core.dat,
-#                            E_mat = E_mat)
+L_back <- Backup_emissions(core.dat = core.dat,
+                           E_mat = E_mat)
 
 ################################################################################
 ############################ Volume of peat drained ############################
 ################################################################################
 
-# AV_indirect <- AV_peat_drained(core.dat = core.dat,
-#                                construct.dat = construct.dat)
+AV_indirect <- AV_peat_drained(core.dat = core.dat,
+                               construct.dat = construct.dat)
 
 ################################################################################
 ############################ Volume of peat removed ############################
 ################################################################################
 
-# AV_direct <- AV_peat_removed(core.dat = core.dat,
-#                              construct.dat = construct.dat)
+AV_direct <- AV_peat_removed(core.dat = core.dat,
+                             construct.dat = construct.dat)
 
 ################################################################################
 ######################### Loss of CO2 fixing potential #########################
@@ -89,6 +90,34 @@ L_direct <- CO2_loss_removed(core.dat = core.dat,
 
 L_soil <- CO2_loss_from_soil(L_direct = L_direct,
                              L_indirect = L_indirect)
+
+L_restoration <- list()
+for (n in 1:5) {
+  core.dat$Site.restoration$n_restore_hydr <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+  L_restoration[[n]] <- CO2_loss_restoration(core.dat, AV_indirect, R_tot)
+}
+
+L_restoration_df <- bind_rows(lapply(seq(L_restoration),
+                                     FUN = function(y) lapply(seq(L_restoration[[y]]),
+                                                              FUN = function(x) {
+                                                                source <- names(L_restoration[[y]])[x]
+                                                                df <- as.data.frame(L_restoration[[y]][[x]])
+                                                                df$source <- source
+                                                                df$n <- y
+                                                                df$t <- 0:(nrow(df)-1)
+                                                                return(df)
+                                                              })))
+
+L_restoration_df$source <- factor(L_restoration_df$source, levels=c("CO2", "CH4", "Tot"))
+L_restoration_df <- L_restoration_df %>%
+  pivot_longer(cols=c(Exp, Min, Max), names_to = "Est", values_to = "val")
+
+ggplot(L_restoration_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
+  geom_line() +
+  scale_x_continuous(limits = c(0, 20)) +
+  facet_grid(Est ~ source, scales="free_y") +
+  theme_bw() +
+  labs(x="Time since harvesting [y]", y="Gaseous C emissions [eq tCO2]", col="n")
 
 ################################################################################
 ####################### CO2 gain due to site improvement #######################
