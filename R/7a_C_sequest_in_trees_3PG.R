@@ -137,6 +137,114 @@ C_sequest_in_trees <- function(core.dat,
               seq_pot_replant = seq_pot_replant))
 }
 
+#' C_sequest_in_trees_RM
+#' @param core.dat UI data
+#' @param forestry.dat UI forestry data
+#' @return 3PG output
+#' @export
+C_sequest_in_trees_RM <- function(core.dat,
+                                  forestry.dat) {
+
+  # THIS FUNCTION...
+
+  # Get 3PG templates
+  parms_3PG <- read_excel("Templates/3PG_parms.xlsx",
+                          sheet = "3PG_parms",
+                          range = "A1:E18")
+
+  species <- c("Scots_Pine", "Sitka_Spruce")
+
+  parms_3PG <- as.data.frame(parms_3PG %>%
+                               filter(complete.cases(.)) %>%
+                               select(Var_name, all_of(species)))
+
+
+  f_E_coef <-  read_excel("Templates/f_E_coef.xlsx",
+                          range = "A1:H7")
+
+  # Extract input variables for easy access
+  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC")
+  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+
+  if (any(!is.null(unlist(YC)))) {
+    # Yield class set by user
+
+    ## Estimate NPP_max for full 3PG simulation based on YC
+    NPP_Max <- lapply(1:length(grep("Area", names(forestry.dat))),
+                      FUN = function(x) {
+                        Spp_a <- species[Spp[[x]][1]]
+                        YC_a <- YC[[x]]
+
+                        aa <- f_E_coef %>%
+                          filter(spp == Spp_a) %>%
+                          filter(y=="NPP_max", x=="YC") %>%
+                          select(-c(y, x, spp)) %>%
+                          unlist()
+
+                        NPP_max <- aa[1] + aa[2]*YC_a + aa[3]*YC_a^2 + aa[4]*YC_a^3 + aa[5]*YC_a^4
+
+                        return(NPP_max)
+                      })
+    names(NPP_Max) <- grep("Area", names(forestry.dat), value=T)
+
+    ## Estimate f_E for simplified 3PG simulation based on NPP_max
+    f_E <- lapply(1:length(grep("Area", names(forestry.dat))),
+                  FUN = function(x) {
+                    Spp_a <- species[Spp[[x]][1]]
+                    NPP_Max_a <- NPP_Max[[x]]
+
+                    aa <- f_E_coef %>%
+                      filter(spp == Spp_a) %>%
+                      filter(y=="f_E", x=="NPP_max_LCA") %>%
+                      select(-c(y, x, spp)) %>%
+                      unlist()
+
+                    f_E <- aa[1] + aa[2]*NPP_Max_a + aa[3]*NPP_Max_a^2 + aa[4]*NPP_Max_a^3 + aa[5]*NPP_Max_a^4
+                    return(f_E)
+                  })
+    names(f_E) <- grep("Area", names(forestry.dat), value=T)
+  }
+
+  ## CONTINUE FROM HERE
+
+  # Get full parameter lists for each area
+  parms_3PG_by_area <- array(0,
+                             dim = c(nrow(parms_3PG), # f_E and t_seedling_replant not included in template
+                                     3, # Exp, Min, Max if defined
+                                     length(grep("Area", names(forestry.dat)))), # number of areas considered
+                             dimnames = list(c(parms_3PG$Var_name),
+                                             c("Exp", "Min", "Max"),
+                                             grep("Area", names(forestry.dat), value=T)))
+
+  ii <- 1
+  for (i in grep("Area", names(forestry.dat))) {
+
+    # Species parameters (no range given)
+    parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[forestry.dat[[i]]$species[1]])]
+
+    parms_3PG_by_area["f_E",,ii] <- f_E[[ii]]
+
+    ii <- ii + 1
+  }
+
+  # 3PG is run using a nested, vectorised approach for efficiency
+  # Nesting applies run_3PG to a) Each area, b) Each of Exp, Min, Max
+  # run_3PG will internally estimate the various total sequestration values
+  # These are stored in the output as NPP_0, NPP_01
+  # Full trajectories are also returned though not used here
+
+  ## Model pre-wind farm forestry
+  out <- apply(parms_3PG_by_area, # remove t_seedling_replant (use default value of 0 for modelling pre-wf forestry)
+               MAR = 3,
+               FUN = function(y) {
+                 apply(y,
+                       MAR=2,
+                       function(x) do.call(run_3PG, as.list(c(x, c(replant=0)))))
+               })
+
+  return(Forestry.seq = out)
+}
+
 run_3PG <- function(t_rotation = 50, # rotation length
                     rotation = 3, # no. rotations
                     t_step = 1, # time step
@@ -246,12 +354,12 @@ run_3PG <- function(t_rotation = 50, # rotation length
   NPP_0 <- res %>%
     filter(abs(t - t0) == min(abs(t - t0))) %>% # this in case of non-integer t/t0
     slice(1) %>%
-    select(NPP_cum) %>%
+    dplyr::select(NPP_cum) %>%
     unname()
 
   NPP_01 <- res %>%
     filter(t >= t0 & t < t1) %>%
-    select(NPP_tot) %>%
+    dplyr::select(NPP_tot) %>%
     sum()
 
   return(list(res = res,

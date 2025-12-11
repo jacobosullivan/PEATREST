@@ -17,17 +17,16 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
   # Extract input variables for easy access
   peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
   A_indirect <- AV_indirect$Total$a
-  t_fallow <- core.dat$Site.restoration$t_fallow
-  t_restore_hydr <- core.dat$Site.restoration$t_restore_hydr # NEW UI VARIABLE - time to restoration of hydrology
-  n_restore_hydr <- core.dat$Site.restoration$n_restore_hydr # NEW UI VARIABLE - shape parameter for restoration of hydrology
+  t_fallow <- core.dat$Peatland.restoration$t_fallow # NEW UI VARIABLE - time between felling and restoration
+  t_restore_microbes <- core.dat$Peatland.restoration$t_restore_microbes # NEW UI VARIABLE - time to restoration of microbial function
+  n_restore_microbes <- core.dat$Peatland.restoration$n_restore_microbes # NEW UI VARIABLE - shape parameter for restoration of microbial function
 
   ## Compute emissions rates from deforested, unrestored peatland
-  A_t <- (A_indirect / 10000)
   D_f <- 0 # Assume D_f = 0 for drained peats
   pD_f <- D_f / 365
 
-  CO2_drained <- A_t * ((R_tot$R_CO2_drained * pD_f) + (R_tot$R_CO2_drained * (1 - pD_f)))
-  CH4_drained <- A_t * ((R_tot$R_CH4_drained * pD_f) + (R_tot$R_CH4_drained * (1 - pD_f)))
+  CO2_drained <- (A_indirect / 10000) * ((R_tot$R_CO2_drained * pD_f) + (R_tot$R_CO2_drained * (1 - pD_f)))
+  CH4_drained <- (A_indirect / 10000) * ((R_tot$R_CH4_drained * pD_f) + (R_tot$R_CH4_drained * (1 - pD_f)))
 
   ## Compute emissions rates from deforested, restored peatland
 
@@ -38,14 +37,14 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
   }
   pD_f <- D_f / 365
 
-  CO2_restored <- A_t * ((R_tot$R_CO2_undrained * pD_f) + (R_tot$R_CO2_undrained * (1 - pD_f)))
-  CH4_restored <- A_t * ((R_tot$R_CH4_undrained * pD_f) + (R_tot$R_CH4_undrained * (1 - pD_f)))
+  CO2_restored <- (A_indirect / 10000) * ((R_tot$R_CO2_undrained * pD_f) + (R_tot$R_CO2_undrained * (1 - pD_f)))
+  CH4_restored <- (A_indirect / 10000) * ((R_tot$R_CH4_undrained * pD_f) + (R_tot$R_CH4_undrained * (1 - pD_f)))
 
   ## Interpolate emissions across restoration phase
   L_CO2_rest_phase <- lapply(seq(CO2_drained),
                              FUN = function(x) {
-                               rest_dyn_mod(t = 1:t_restore_hydr[x],
-                                            n = n_restore_hydr[x],
+                               rest_dyn_mod(t = 1:t_restore_microbes[x],
+                                            n = n_restore_microbes[x],
                                             ymin = CO2_drained[x],
                                             ymax = CO2_restored[x],
                                             convThresh = conv_val)
@@ -53,8 +52,8 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
 
   L_CH4_rest_phase <- lapply(seq(CO2_drained),
                              FUN = function(x) {
-                               rest_dyn_mod(t = 1:t_restore_hydr[x],
-                                            n = n_restore_hydr[x],
+                               rest_dyn_mod(t = 1:t_restore_microbes[x],
+                                            n = n_restore_microbes[x],
                                             ymin = CH4_drained[x],
                                             ymax = CH4_restored[x],
                                             convThresh = conv_val)
@@ -90,11 +89,11 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
                             CH4 = L_CH4_rest_phase)
 
 
-  if (1) {
-    maxYear <- max(t_fallow) + max(t_restore_hydr) + 10
+  if (0) {
+    maxYear <- max(t_fallow) + max(t_restore_microbes) + 10
     par(mfrow=c(1,3))
-    plot(x=seq(max(t_restore_hydr)),
-         y=rep(max(unlist(L_peat_rest_phase$CO2)), max(t_restore_hydr)),
+    plot(x=seq(max(t_restore_microbes)),
+         y=rep(max(unlist(L_peat_rest_phase$CO2)), max(t_restore_microbes)),
          xlim=c(0,maxYear),
          ylim=c(min(unlist(L_peat_rest_phase$CO2)),max(unlist(L_peat_rest_phase$CO2))),
          xlab="Time since restoration [yr]",
@@ -109,13 +108,13 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
       points(x=t_fallow[i]-1,
              y=L_peat_rest_phase$CO2[[i]][t_fallow[i]],
              col="red")
-      points(x=t_fallow[i]+t_restore_hydr[i]+1,
-             y=L_peat_rest_phase$CO2[[i]][t_fallow[i]+t_restore_hydr[i]+1],
+      points(x=t_fallow[i]+t_restore_microbes[i]+1,
+             y=L_peat_rest_phase$CO2[[i]][t_fallow[i]+t_restore_microbes[i]+1],
              col="blue")
     }
 
-    plot(x=seq(max(t_restore_hydr)),
-         y=rep(max(unlist(L_peat_rest_phase$CH4)), max(t_restore_hydr)),
+    plot(x=seq(max(t_restore_microbes)),
+         y=rep(max(unlist(L_peat_rest_phase$CH4)), max(t_restore_microbes)),
          xlim=c(0,maxYear),
          ylim=c(min(unlist(L_peat_rest_phase$CH4)),max(unlist(L_peat_rest_phase$CH4))),
          xlab="Time since restoration [yr]",
@@ -130,13 +129,13 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
       points(x=t_fallow[i]-1,
              y=L_peat_rest_phase$CH4[[i]][t_fallow[i]],
              col="red")
-      points(x=t_fallow[i]+t_restore_hydr[i]+1,
-             y=L_peat_rest_phase$CH4[[i]][t_fallow[i]+t_restore_hydr[i]+1],
+      points(x=t_fallow[i]+t_restore_microbes[i]+1,
+             y=L_peat_rest_phase$CH4[[i]][t_fallow[i]+t_restore_microbes[i]+1],
              col="blue")
     }
 
-    plot(x=seq(max(t_restore_hydr)),
-         y=rep(max(unlist(L_peat_rest_phase$Tot)), max(t_restore_hydr)),
+    plot(x=seq(max(t_restore_microbes)),
+         y=rep(max(unlist(L_peat_rest_phase$Tot)), max(t_restore_microbes)),
          xlim=c(0,maxYear),
          ylim=c(min(unlist(L_peat_rest_phase$Tot)),max(unlist(L_peat_rest_phase$Tot))),
          xlab="Time since restoration [yr]",
@@ -151,8 +150,8 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
       points(x=t_fallow[i]-1,
              y=L_peat_rest_phase$Tot[[i]][t_fallow[i]],
              col="red")
-      points(x=t_fallow[i]+t_restore_hydr[i]+1,
-             y=L_peat_rest_phase$Tot[[i]][t_fallow[i]+t_restore_hydr[i]+1],
+      points(x=t_fallow[i]+t_restore_microbes[i]+1,
+             y=L_peat_rest_phase$Tot[[i]][t_fallow[i]+t_restore_microbes[i]+1],
              col="blue")
     }
   }

@@ -18,9 +18,10 @@ construct.dat <- dat$construct.dat
 rm(dat)
 
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
-core.dat$Site.restoration$t_restore_hydr <- c(Exp = 10, Min = 8, Max = 12) # time to restoration of hydrology [yr]
-core.dat$Site.restoration$n_restore_hydr <- c(Exp = 2, Min = 2, Max = 2) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
-core.dat$Site.restoration$t_fallow <- c(Exp = 5, Min = 3, Max = 7) # time between harvesting and restoration [yr]
+core.dat$Peatland.restoration$t_restore_microbes <- c(Exp = 10, Min = 8, Max = 12) # time to restoration of microbial function [yr]
+core.dat$Peatland.restoration$n_restore_microbes <- c(Exp = 2, Min = 2, Max = 2) # shape parameter for restoration of microbial function: 1 gives concave downward function (rapid increase in function)
+core.dat$Peatland.restoration$t_fallow <- c(Exp = 5, Min = 3, Max = 7) # time between harvesting and restoration [yr]
+core.dat$Peatland.restoration$n_restore <- c(Exp = 4, Min = 4, Max = 4) # shape parameter for restoration of bog plant function: 1 gives concave downward function (rapid increase in function)
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
 
 ## Counterfactuals in matrix form for fast multiplication
@@ -64,9 +65,37 @@ AV_direct <- AV_peat_removed(core.dat = core.dat,
 ######################### Loss of CO2 fixing potential #########################
 ################################################################################
 
-L_fix <- Loss_of_CO2_fix_pot(core.dat = core.dat,
-                             AV_direct = AV_direct,
-                             AV_indirect = AV_indirect)
+# L_fix <- Loss_of_CO2_fix_pot(core.dat = core.dat,
+#                              AV_direct = AV_direct,
+#                              AV_indirect = AV_indirect)
+
+S_bog_sequ <- list()
+# nn <- 1:5
+nn <- c(1,2.25,5)
+# nn <- c(1,3,8)
+for (n in nn) {
+  core.dat$Bog.plants$n_restore <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+  S_bog_sequ[[length(S_bog_sequ)+1]] <- Bog_plant_restoration(core.dat, AV_indirect)
+}
+
+S_bog_sequ_df <- bind_rows(lapply(seq(S_bog_sequ),
+                                  FUN = function(x) {
+                                    df <- as.data.frame(S_bog_sequ[[x]])
+                                    df$n <- nn[x]
+                                    df$t <- 0:(nrow(df)-1)
+                                    return(df)
+                                  }))
+
+
+S_bog_sequ_df <- S_bog_sequ_df %>%
+  pivot_longer(cols=c(Exp, Min, Max), names_to = "Est", values_to = "val")
+
+p1 <- ggplot(S_bog_sequ_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
+  geom_line() +
+  scale_x_continuous(limits = c(0, 40)) +
+  facet_grid(Est ~ ., scales="free_y") +
+  theme_bw() +
+  labs(x="Time since harvesting [y]", y="Bog plant sequestration [tCO2]", col="n")
 
 ################################################################################
 ########################## Emissions rates from soils ##########################
@@ -92,9 +121,12 @@ L_soil <- CO2_loss_from_soil(L_direct = L_direct,
                              L_indirect = L_indirect)
 
 L_restoration <- list()
-for (n in 1:5) {
-  core.dat$Site.restoration$n_restore_hydr <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
-  L_restoration[[n]] <- CO2_loss_restoration(core.dat, AV_indirect, R_tot)
+# nn <- 1:5
+nn <- c(1,2.25,5)
+# nn <- c(1,3,8)
+for (n in nn) {
+  core.dat$Peatland.restoration$n_restore_microbes <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
+  L_restoration[[length(L_restoration)+1]] <- CO2_loss_restoration(core.dat, AV_indirect, R_tot)
 }
 
 L_restoration_df <- bind_rows(lapply(seq(L_restoration),
@@ -103,7 +135,7 @@ L_restoration_df <- bind_rows(lapply(seq(L_restoration),
                                                                 source <- names(L_restoration[[y]])[x]
                                                                 df <- as.data.frame(L_restoration[[y]][[x]])
                                                                 df$source <- source
-                                                                df$n <- y
+                                                                df$n <- nn[y]
                                                                 df$t <- 0:(nrow(df)-1)
                                                                 return(df)
                                                               })))
@@ -112,13 +144,15 @@ L_restoration_df$source <- factor(L_restoration_df$source, levels=c("CO2", "CH4"
 L_restoration_df <- L_restoration_df %>%
   pivot_longer(cols=c(Exp, Min, Max), names_to = "Est", values_to = "val")
 
-ggplot(L_restoration_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
+p2 <- ggplot(L_restoration_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
   geom_line() +
   scale_x_continuous(limits = c(0, 20)) +
   facet_grid(Est ~ source, scales="free_y") +
   theme_bw() +
   labs(x="Time since harvesting [y]", y="Gaseous C emissions [eq tCO2]", col="n")
 
+p1
+p2
 ################################################################################
 ####################### CO2 gain due to site improvement #######################
 ################################################################################

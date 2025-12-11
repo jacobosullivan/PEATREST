@@ -102,6 +102,11 @@ Will you attempt to block all artificial ditches and facilitate  rewetting?,NA,S
 Will the habitat of the site be restored on decommissioning?,restore_hab_in,Site.restoration,core
 Will you control grazing on degraded areas?,NA,Site.restoration,core
 Will you manage areas to favour reintroduction of species,NA,Site.restoration,core
+Peat land restoration following deforestation,NA,Peatland.restoration,core
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Peatland.restoration,core
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Peatland.restoration,core
+Shape parameter for restoration of microbial community function,n_restore_microbes,Peatland.restoration,core
+Shape parameter for restoration of plant community function,n_restore,Peatland.restoration,core
 Choice of methodology for calculating emission factors,em_factor_meth_in,Em.factor.meth,core
 Windfarm characteristics,NA,Windfarm,forestry
 Location,NA,Windfarm,forestry
@@ -127,6 +132,10 @@ Slope (a),slope_pow_curve,Area.1,forestry
 Intercept (b),int_pow_curve,Area.1,forestry
 Major soil sub-group,soil_type,Area.1,forestry
 Species,species,Area.1,forestry
+Input used to parameterise 3PG module,NA,Area.1,forestry
+Yield class,YC,Area.1,forestry
+Average tree height (m),h_tree,Area.1,forestry
+Stand age (yr),t_stand,Area.1,forestry
 Felled Forest Biomass used as biofuel?,felled_biofuel,Area.1,forestry
 Felling regime,NA,Area.1,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.1,forestry
@@ -148,6 +157,10 @@ Slope (a),slope_pow_curve,Area.2,forestry
 Intercept (b),int_pow_curve,Area.2,forestry
 Major soil sub-group,soil_type,Area.2,forestry
 Species,species,Area.2,forestry
+Input used to parameterise 3PG module,NA,Area.2,forestry
+Yield class,YC,Area.2,forestry
+Average tree height (m),h_tree,Area.2,forestry
+Stand age (yr),t_stand,Area.2,forestry
 Felled Forest Biomass used as biofuel?,felled_biofuel,Area.2,forestry
 Felling regime,NA,Area.2,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.2,forestry
@@ -169,6 +182,10 @@ Slope (a),slope_pow_curve,Area.3,forestry
 Intercept (b),int_pow_curve,Area.3,forestry
 Major soil sub-group,soil_type,Area.3,forestry
 Species,species,Area.3,forestry
+Input used to parameterise 3PG module,NA,Area.3,forestry
+Yield class,YC,Area.3,forestry
+Average tree height (m),h_tree,Area.3,forestry
+Stand age (yr),t_stand,Area.3,forestry
 Felled Forest Biomass used as biofuel?,felled_biofuel,Area.3,forestry
 Felling regime,NA,Area.3,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.3,forestry
@@ -190,6 +207,10 @@ Slope (a),slope_pow_curve,Area.4,forestry
 Intercept (b),int_pow_curve,Area.4,forestry
 Major soil sub-group,soil_type,Area.4,forestry
 Species,species,Area.4,forestry
+Input used to parameterise 3PG module,NA,Area.4,forestry
+Yield class,YC,Area.4,forestry
+Average tree height (m),h_tree,Area.4,forestry
+Stand age (yr),t_stand,Area.4,forestry
 Felled Forest Biomass used as biofuel?,felled_biofuel,Area.4,forestry
 Felling regime,NA,Area.4,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.4,forestry
@@ -211,6 +232,10 @@ Slope (a),slope_pow_curve,Area.5,forestry
 Intercept (b),int_pow_curve,Area.5,forestry
 Major soil sub-group,soil_type,Area.5,forestry
 Species,species,Area.5,forestry
+Input used to parameterise 3PG module,NA,Area.5,forestry
+Yield class,YC,Area.5,forestry
+Average tree height (m),h_tree,Area.5,forestry
+Stand age (yr),t_stand,Area.5,forestry
 Felled Forest Biomass used as biofuel?,felled_biofuel,Area.5,forestry
 Felling regime,NA,Area.5,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.5,forestry

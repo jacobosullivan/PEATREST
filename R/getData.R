@@ -27,7 +27,7 @@ getCoreInputData <- function(path, df_struct) {
 
   df <- read_excel(path,
                    sheet = "Core input data",
-                   range = "B9:G112",
+                   range = "B9:G123",
                    col_names = c("Input.data", "Exp", "rem1", "Min", "rem2", "Max"))
 
   df <- df %>%

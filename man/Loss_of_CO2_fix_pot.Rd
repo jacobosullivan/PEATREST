@@ -7,15 +7,11 @@
 Loss_of_CO2_fix_pot(core.dat, AV_direct, AV_indirect)
 }
 \arguments{
-\item{A_direct}{Area of removed peat}
+\item{core.dat}{UI data}
 
-\item{A_indirect}{Area of drained peat}
+\item{AV_direct}{Area of removed peat}
 
-\item{G_bog}{Peatland carbon accumulation rate}
-
-\item{t_wf}{Windfarm life time}
-
-\item{t_restore}{Time to restoration after decomissioning}
+\item{AV_indirect}{Area of drained peat}
 }
 \value{
 L_fix
