@@ -118,8 +118,8 @@ Height of turbines (m),H_turb,Windfarm,forestry
 Average site windspeed (m s-1),Vwind_site,Windfarm,forestry
 Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
 Emissions due to forestry operations,NA,Emissions,forestry
-Emissions from felling (g CO2 m-3),L_harv,Emissions,forestry
-Emissions of CO2 associated with transportation (g CO2 km-1 t-1),L_transport,Emissions,forestry
+Emissions from felling (g CO2 m-3),E_harv,Emissions,forestry
+Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
 Forestry Plantation Characteristics,NA,Emissions,forestry
 Note - total number of turbines already specified: ,NA,Emissions,forestry
 AREA 1,NA,Area.1,forestry
@@ -136,9 +136,18 @@ Input used to parameterise 3PG module,NA,Area.1,forestry
 Yield class,YC,Area.1,forestry
 Average tree height (m),h_tree,Area.1,forestry
 Stand age (yr),t_stand,Area.1,forestry
-Felled Forest Biomass used as biofuel?,felled_biofuel,Area.1,forestry
+Is forestry being rotated?,rotation,Area.1,forestry
+Length of rotation (yr) (50 yr default),t_rotation,Area.1,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.1,forestry
+Distance to paper mill (km),d_wpF,Area.1,forestry
+Distance to wood panel mill (km),d_wpM,Area.1,forestry
+Distance to saw mill (km),d_wpS,Area.1,forestry
+Felled Forest Biomass used as biofuel?,NA,Area.1,forestry
+Proportion of harvested forestry used for biofuel,p_biofuel,Area.1,forestry
+Distance to biofuel plant (km),d_biofuel,Area.1,forestry
 Felling regime,NA,Area.1,forestry
-Age of forestry when felled for windfarm (yr),t_harv,Area.1,forestry
+Age of forestry when felled (yr),t_harv,Area.1,forestry
+Total area felled (ha),A_harv,Area.1,forestry
 Area felled around each turbine (ha),A_harv_turb,Area.1,forestry
 Width of forest around felled area (m),D_width,Area.1,forestry
 Value of felled forestry as a biomass fuel (MWh t-1),e_felled_biofuel,Area.1,forestry
@@ -161,9 +170,18 @@ Input used to parameterise 3PG module,NA,Area.2,forestry
 Yield class,YC,Area.2,forestry
 Average tree height (m),h_tree,Area.2,forestry
 Stand age (yr),t_stand,Area.2,forestry
-Felled Forest Biomass used as biofuel?,felled_biofuel,Area.2,forestry
+Is forestry being rotated?,rotation,Area.2,forestry
+Length of rotation (yr) (50 yr default),t_rotation,Area.2,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.2,forestry
+Distance to paper mill (km),d_wpF,Area.2,forestry
+Distance to wood panel mill (km),d_wpM,Area.2,forestry
+Distance to saw mill (km),d_wpS,Area.2,forestry
+Felled Forest Biomass used as biofuel?,NA,Area.2,forestry
+Proportion of harvested forestry used for biofuel,p_biofuel,Area.2,forestry
+Distance to biofuel plant (km),d_biofuel,Area.2,forestry
 Felling regime,NA,Area.2,forestry
-Age of forestry when felled for windfarm (yr),t_harv,Area.2,forestry
+Age of forestry when felled (yr),t_harv,Area.2,forestry
+Total area felled (ha),A_harv,Area.2,forestry
 Area felled around each turbine (ha),A_harv_turb,Area.2,forestry
 Width of forest around felled area (m),D_width,Area.2,forestry
 Value of felled forestry as a biomass fuel (MWh t-1),e_felled_biofuel,Area.2,forestry
@@ -186,9 +204,18 @@ Input used to parameterise 3PG module,NA,Area.3,forestry
 Yield class,YC,Area.3,forestry
 Average tree height (m),h_tree,Area.3,forestry
 Stand age (yr),t_stand,Area.3,forestry
-Felled Forest Biomass used as biofuel?,felled_biofuel,Area.3,forestry
+Is forestry being rotated?,rotation,Area.3,forestry
+Length of rotation (yr) (50 yr default),t_rotation,Area.3,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.3,forestry
+Distance to paper mill (km),d_wpF,Area.3,forestry
+Distance to wood panel mill (km),d_wpM,Area.3,forestry
+Distance to saw mill (km),d_wpS,Area.3,forestry
+Felled Forest Biomass used as biofuel?,NA,Area.3,forestry
+Proportion of harvested forestry used for biofuel,p_biofuel,Area.3,forestry
+Distance to biofuel plant (km),d_biofuel,Area.3,forestry
 Felling regime,NA,Area.3,forestry
-Age of forestry when felled for windfarm (yr),t_harv,Area.3,forestry
+Age of forestry when felled (yr),t_harv,Area.3,forestry
+Total area felled (ha),A_harv,Area.3,forestry
 Area felled around each turbine (ha),A_harv_turb,Area.3,forestry
 Width of forest around felled area (m),D_width,Area.3,forestry
 Value of felled forestry as a biomass fuel (MWh t-1),e_felled_biofuel,Area.3,forestry
@@ -211,9 +238,18 @@ Input used to parameterise 3PG module,NA,Area.4,forestry
 Yield class,YC,Area.4,forestry
 Average tree height (m),h_tree,Area.4,forestry
 Stand age (yr),t_stand,Area.4,forestry
-Felled Forest Biomass used as biofuel?,felled_biofuel,Area.4,forestry
+Is forestry being rotated?,rotation,Area.4,forestry
+Length of rotation (yr) (50 yr default),t_rotation,Area.4,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.4,forestry
+Distance to paper mill (km),d_wpF,Area.4,forestry
+Distance to wood panel mill (km),d_wpM,Area.4,forestry
+Distance to saw mill (km),d_wpS,Area.4,forestry
+Felled Forest Biomass used as biofuel?,NA,Area.4,forestry
+Proportion of harvested forestry used for biofuel,p_biofuel,Area.4,forestry
+Distance to biofuel plant (km),d_biofuel,Area.4,forestry
 Felling regime,NA,Area.4,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.4,forestry
+Total area felled (ha),A_harv,Area.4,forestry
 Area felled around each turbine (ha),A_harv_turb,Area.4,forestry
 Width of forest around felled area (m),D_width,Area.4,forestry
 Value of felled forestry as a biomass fuel (MWh t-1),e_felled_biofuel,Area.4,forestry
@@ -236,9 +272,18 @@ Input used to parameterise 3PG module,NA,Area.5,forestry
 Yield class,YC,Area.5,forestry
 Average tree height (m),h_tree,Area.5,forestry
 Stand age (yr),t_stand,Area.5,forestry
-Felled Forest Biomass used as biofuel?,felled_biofuel,Area.5,forestry
+Is forestry being rotated?,rotation,Area.5,forestry
+Length of rotation (yr) (50 yr default),t_rotation,Area.5,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.5,forestry
+Distance to paper mill (km),d_wpF,Area.5,forestry
+Distance to wood panel mill (km),d_wpM,Area.5,forestry
+Distance to saw mill (km),d_wpS,Area.5,forestry
+Felled Forest Biomass used as biofuel?,NA,Area.5,forestry
+Proportion of harvested forestry used for biofuel,p_biofuel,Area.5,forestry
+Distance to biofuel plant (km),d_biofuel,Area.5,forestry
 Felling regime,NA,Area.5,forestry
-Age of forestry when felled for windfarm (yr),t_harv,Area.5,forestry
+Age of forestry when felled (yr),t_harv,Area.5,forestry
+Total area felled (ha),A_harv,Area.5,forestry
 Area felled around each turbine (ha),A_harv_turb,Area.5,forestry
 Width of forest around felled area (m),D_width,Area.5,forestry
 Value of felled forestry as a biomass fuel (MWh t-1),e_felled_biofuel,Area.5,forestry

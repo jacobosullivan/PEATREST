@@ -150,7 +150,7 @@ C_sequest_in_trees_RM <- function(core.dat,
   # Get 3PG templates
   parms_3PG <- read_excel("Templates/3PG_parms.xlsx",
                           sheet = "3PG_parms",
-                          range = "A1:E18")
+                          range = "A1:E24")
 
   species <- c("Scots_Pine", "Sitka_Spruce")
 
@@ -158,54 +158,47 @@ C_sequest_in_trees_RM <- function(core.dat,
                                filter(complete.cases(.)) %>%
                                select(Var_name, all_of(species)))
 
-
   f_E_coef <-  read_excel("Templates/f_E_coef.xlsx",
                           range = "A1:H7")
 
   # Extract input variables for easy access
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC")
+  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
 
-  if (any(!is.null(unlist(YC)))) {
-    # Yield class set by user
+  ## Estimate NPP_max for full 3PG simulation based on YC
+  NPP_Max <- lapply(1:length(grep("Area", names(forestry.dat))),
+                    FUN = function(x) {
+                      Spp_a <- species[Spp[[x]][1]]
+                      YC_a <- YC[[x]]
 
-    ## Estimate NPP_max for full 3PG simulation based on YC
-    NPP_Max <- lapply(1:length(grep("Area", names(forestry.dat))),
-                      FUN = function(x) {
-                        Spp_a <- species[Spp[[x]][1]]
-                        YC_a <- YC[[x]]
+                      aa <- f_E_coef %>%
+                        filter(spp == Spp_a) %>%
+                        filter(y=="NPP_max", x=="YC") %>%
+                        select(-c(y, x, spp)) %>%
+                        unlist()
 
-                        aa <- f_E_coef %>%
-                          filter(spp == Spp_a) %>%
-                          filter(y=="NPP_max", x=="YC") %>%
-                          select(-c(y, x, spp)) %>%
-                          unlist()
+                      NPP_max <- aa[1] + aa[2]*YC_a + aa[3]*YC_a^2 + aa[4]*YC_a^3 + aa[5]*YC_a^4
 
-                        NPP_max <- aa[1] + aa[2]*YC_a + aa[3]*YC_a^2 + aa[4]*YC_a^3 + aa[5]*YC_a^4
+                      return(NPP_max)
+                    })
+  names(NPP_Max) <- grep("Area", names(forestry.dat), value=T)
 
-                        return(NPP_max)
-                      })
-    names(NPP_Max) <- grep("Area", names(forestry.dat), value=T)
+  ## Estimate f_E for simplified 3PG simulation based on NPP_max
+  f_E <- lapply(1:length(grep("Area", names(forestry.dat))),
+                FUN = function(x) {
+                  Spp_a <- species[Spp[[x]][1]]
+                  NPP_Max_a <- NPP_Max[[x]]
 
-    ## Estimate f_E for simplified 3PG simulation based on NPP_max
-    f_E <- lapply(1:length(grep("Area", names(forestry.dat))),
-                  FUN = function(x) {
-                    Spp_a <- species[Spp[[x]][1]]
-                    NPP_Max_a <- NPP_Max[[x]]
+                  aa <- f_E_coef %>%
+                    filter(spp == Spp_a) %>%
+                    filter(y=="f_E", x=="NPP_max_LCA") %>%
+                    select(-c(y, x, spp)) %>%
+                    unlist()
 
-                    aa <- f_E_coef %>%
-                      filter(spp == Spp_a) %>%
-                      filter(y=="f_E", x=="NPP_max_LCA") %>%
-                      select(-c(y, x, spp)) %>%
-                      unlist()
-
-                    f_E <- aa[1] + aa[2]*NPP_Max_a + aa[3]*NPP_Max_a^2 + aa[4]*NPP_Max_a^3 + aa[5]*NPP_Max_a^4
-                    return(f_E)
-                  })
-    names(f_E) <- grep("Area", names(forestry.dat), value=T)
-  }
-
-  ## CONTINUE FROM HERE
+                  f_E <- aa[1] + aa[2]*NPP_Max_a + aa[3]*NPP_Max_a^2 + aa[4]*NPP_Max_a^3 + aa[5]*NPP_Max_a^4
+                  return(f_E)
+                })
+  names(f_E) <- grep("Area", names(forestry.dat), value=T)
 
   # Get full parameter lists for each area
   parms_3PG_by_area <- array(0,
@@ -221,8 +214,21 @@ C_sequest_in_trees_RM <- function(core.dat,
 
     # Species parameters (no range given)
     parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[forestry.dat[[i]]$species[1]])]
-
     parms_3PG_by_area["f_E",,ii] <- f_E[[ii]]
+
+    # Max simulation length set to 500 + harvesting age
+    parms_3PG_by_area["t_wf",,ii] <- 500 + map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_harv")[[ii]]
+
+    # If user selects rotation, set rotation length to 50 by default.
+    if (map(forestry.dat[grep("Area", names(forestry.dat))], .f = "rotation")[[ii]][1] == 1) { # user selects rotation
+      if (is.null(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_rotation")[[ii]])) { # user has NOT input rotation length
+        parms_3PG_by_area["t_rotation",,ii] <- rep(50, 3)
+      } else {
+        parms_3PG_by_area["t_rotation",,ii] <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_rotation")[[ii]]
+      }
+    } else { # user selects NO rotation
+      parms_3PG_by_area["t_rotation",,ii] <- parms_3PG_by_area["t_wf",,ii]
+    }
 
     ii <- ii + 1
   }
@@ -231,16 +237,34 @@ C_sequest_in_trees_RM <- function(core.dat,
   # Nesting applies run_3PG to a) Each area, b) Each of Exp, Min, Max
   # run_3PG will internally estimate the various total sequestration values
   # These are stored in the output as NPP_0, NPP_01
-  # Full trajectories are also returned though not used here
+  # Full trajectories are also returned
 
-  ## Model pre-wind farm forestry
-  out <- apply(parms_3PG_by_area, # remove t_seedling_replant (use default value of 0 for modelling pre-wf forestry)
+  out <- apply(parms_3PG_by_area,
                MAR = 3,
                FUN = function(y) {
                  apply(y,
                        MAR=2,
-                       function(x) do.call(run_3PG, as.list(c(x, c(replant=0)))))
+                       function(x) do.call(run_3PG, as.list(c(x, c(replant=0), c(thin=NA)))))
                })
+
+  # Remove summary data used in wind farm LCA
+  out <- lapply(out, FUN = function(x) map(x, .f = "res"))
+
+  # Translate time axis in accordance with harvesting age and scale NPP by area
+  out <- lapply(seq_along(out), FUN = function(x) {
+    res <- lapply(seq_along(out[[x]]), FUN = function(y) {
+      out[[x]][[y]] %>%
+        mutate(t = t - unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "t_harv"))[y]) %>%
+        rename(NPP_pa = NPP, # trees only
+               NPP_tot_pa = NPP_tot) %>% # trees + understory
+        mutate(NPP = NPP_pa * unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "A_harv"))[y], # trees only
+               NPP_tot = NPP_tot_pa * unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "A_harv"))[y]) # trees + understory
+    })
+    names(res) <- names(out[[x]])
+    return(res)
+  })
+
+  names(out) <- grep("Area", names(forestry.dat), value=T)
 
   return(Forestry.seq = out)
 }
@@ -276,6 +300,10 @@ run_3PG <- function(t_rotation = 50, # rotation length
     t_seedling_replant <- 0
   }
 
+  if (is.na(thin)) { # required since setting a variable to NULL in a list will simply remove that variable!
+    thin <- NULL
+  }
+
   t <- seq(0,t_rotation,by=t_step)
   res <- data.frame(matrix(0, nrow=length(t), ncol=10))
   colnames(res) <- c("t",
@@ -304,7 +332,7 @@ run_3PG <- function(t_rotation = 50, # rotation length
   res$phi_pa_u[1] <- phi_p * (1 - (1 - exp(-kP * res$LAI[1]))) * (1 - exp(-kP * LAI_u))
   res$phi_pau_u[1] <- res$phi_pa_u[1] * f_E
   res$NPP[1] <- YPP * e_max * res$phi_pau[1]
-  res$NPP_tot[1] <- YPP * e_max * (res$phi_pau[1] +  res$phi_pau_u[1]) * 10 # convert from m-2 to ha-1
+  res$NPP_tot[1] <- YPP * e_max * (res$phi_pau[1] +  res$phi_pau_u[1])
   res$NPP_cum[1] <- res$NPP_tot[1]
 
   # Iterate 3PG
@@ -333,7 +361,7 @@ run_3PG <- function(t_rotation = 50, # rotation length
     res$phi_pa_u[i] <- phi_p * (1 - (1 - exp(-kP * res$LAI[i]))) * (1 - exp(-kP * LAI_u))
     res$phi_pau_u[i] <- res$phi_pa_u[i] * f_E
     res$NPP[i] <- YPP * e_max * res$phi_pau[i]
-    res$NPP_tot[i] <- YPP * e_max * (res$phi_pau[i] +  res$phi_pau_u[i]) * 10 # convert from m-2 to ha-1
+    res$NPP_tot[i] <- YPP * e_max * (res$phi_pau[i] +  res$phi_pau_u[i])
     res$NPP_cum[i] <- res$NPP_cum[i-1] + res$NPP_tot[i]
   }
 
@@ -351,6 +379,11 @@ run_3PG <- function(t_rotation = 50, # rotation length
     res$t <- seq(0,(nrow(res)-1)*t_step,by=t_step)
   }
 
+  res <- res %>%
+    mutate(NPP = 10 * NPP, # convert from kg C m-2 yr-1 to t C ha-1 hr-1 (10000/1000 = 10)
+           NPP_tot = 10 * NPP_tot,
+           NPP_cum = 10 * NPP_cum)
+
   NPP_0 <- res %>%
     filter(abs(t - t0) == min(abs(t - t0))) %>% # this in case of non-integer t/t0
     slice(1) %>%
@@ -365,93 +398,4 @@ run_3PG <- function(t_rotation = 50, # rotation length
   return(list(res = res,
               NPP_0 = NPP_0,
               NPP_01 = NPP_01))
-}
-
-if (0) { # testing reason for differences due to t_seedling_replant
-
-  t_rotation <- 150
-
-  out0 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 0, thin = NULL)
-  out0b <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 0, thin = NULL)
-  out0c <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 0, thin = NULL, Wl_init = 0.01)
-
-  out1 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 10, thin = NULL, replant = 1)
-  out2 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 10, thin = NULL, replant = 1)
-  out3 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 10, thin = NULL, replant = 1, A0.5 = )
-
-  # When seedlings planted at age 10, dynamics are different relative to planting at age 0 then subsetting the time series
-  # Specifically, Wl is lower (unless and until Wl converges)
-  # Also there are differences in the decay phase (once the age modifier kills off growth)
-
-  plot(out0$res$t, out0$res$NPP, type='n', ylim=c(0,0.6))
-  lines(out1$res$t, out1$res$NPP, type='l', col="red")
-  lines(out2$res$t, out2$res$NPP, type='l', col="blue")
-  lines(out0$res$t, out0$res$NPP, type='l', col="black")
-
-  plot(out0$res$t, out0$res$NPP, type='n', ylim=c(0,0.6))
-  lines(out0$res$t, out0$res$NPP, type='l', col="black")
-  lines(out0b$res$t, out0b$res$NPP, type='l', col="black", lty=2)
-  lines(out0c$res$t, out0c$res$NPP, type='l', col="black", lty=3)
-
-
-
-  plot(out0$res$Wl[11:t_rotation], out1$res$Wl[1:(t_rotation-10)])
-  abline(c(0,1))
-
-  out0$res$Wl[out0$res$t == 10] # leaf biomass at 10 years
-  out2 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 10, Wl_init = out0$res$Wl[out0$res$t == 10], thin = NULL, replant = 1)
-  out3 <- run_3PG(t_rotation = t_rotation, t_seedling_replant = 0, Wl_init = out0$res$Wl[out0$res$t == 10], thin = NULL, replant = 0)
-
-  ## This shows that the model can now be simply offset by t_seedling_replant
-  plot(out0$res$Wl[11:t_rotation], out2$res$Wl[1:(t_rotation-10)])
-  abline(c(0,1))
-
-  plot(out0$res$NPP[11:t_rotation], out2$res$NPP[1:(t_rotation-10)])
-  abline(c(0,1))
-
-  plot(out2$res$t + 10, out2$res$Wl, col='red', type='l', xlim=c(0,60), ylim=c(0,1))
-  lines(out1$res$t + 10, out1$res$Wl, col='blue', type='l')
-  lines(out3$res$t, out1$res$Wl, col='green', type='l')
-  lines(out0$res$t, out0$res$Wl)
-
-
-  ## Demonstrating peatland restoration model concept:
-  t_rotation <- 200
-  out0 <- run_3PG(t_rotation = t_rotation,
-                  t_seedling_replant = 0,
-                  thin = NULL,
-                  f_E = 0.3,
-                  A0.5 = 80)
-
-  age_at_felling <- 50
-  restoration_time <- 10
-
-  # out0$res <- out0$res %>%
-  #   filter(t >= age_at_felling) %>%
-  #   mutate(t = t - age_at_felling)
-
-  out0$res$NPP_bog <- 0.2
-  out0$res$NPP_bog[out0$res$t < age_at_felling] <- 0
-  out0$res$NPP_bog[out0$res$t >= age_at_felling & out0$res$t < restoration_time + age_at_felling] <- -0.1
-  out0$res$NPP_cum <- 0
-  out0$res$NPP_cum[age_at_felling:nrow(out0$res)] <- cumsum(out0$res$NPP[age_at_felling:nrow(out0$res)])
-  out0$res$NPP_bog_cum <- 0
-  out0$res$NPP_bog_cum[age_at_felling:nrow(out0$res)] <- cumsum(out0$res$NPP_bog[age_at_felling:nrow(out0$res)])
-
-  t_payback <- which(out0$res$NPP_cum - out0$res$NPP_bog_cum < 0)[1]
-
-
-  p1 <- ggplot(out0$res, aes(x=t, y=NPP)) +
-    geom_line(col="green") +
-    geom_ribbon(aes(ymin = 0, ymax = NPP), alpha=0.2, fill="green") +
-    geom_line(aes(y=NPP_bog), col="red") +
-    geom_ribbon(aes(ymin = 0, ymax = NPP_bog), alpha=0.2, fill="red") +
-    geom_vline(xintercept = age_at_felling, linetype=2) +
-    geom_vline(xintercept = t_payback) +
-    scale_x_continuous(limits=c(0, 1.1*t_payback)) +
-    theme_bw()
-
-  png("../peatland_restoration_LCA.png", width=10, height=8, units="cm", res=300)
-  p1
-  dev.off()
 }
