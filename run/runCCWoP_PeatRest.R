@@ -19,6 +19,42 @@ rm(dat)
 
 growthYield.dat <- getGrowthYieldData()
 
+if (0) {
+  ## Exploratory plots of GY table show issue with biomass of wood products
+
+  ggplot(growthYield.dat %>% filter(Spp=="Scots_pine"),
+         aes(x=Age, y=H, col=factor(YC))) +
+    geom_line()
+
+
+  pivot_longer(growthYield.dat %>%
+                 select(Spp, YC, Age, rho_wpF, rho_wpM, rho_wpS),
+               cols = starts_with("rho_"),
+               names_prefix = "rho_",
+               names_to = "wp",
+               values_to = "rho") %>%
+    filter(Spp=="Sitka_spruce") %>%
+  ggplot(aes(x=Age, y=rho, linetype=wp, col=factor(YC))) +
+    geom_line()
+
+  ggplot(growthYield.dat %>%
+           filter(Spp=="Sitka_spruce", YC==6), aes(x=Age, y=(B_wpF)/(B_s+B_c+B_r))) +
+    geom_line()
+
+  ggplot(growthYield.dat %>%
+           filter(Spp=="Sitka_spruce", YC==6), aes(x=Age, y=(B_wpM)/(B_s+B_c+B_r))) +
+    geom_line()
+
+  ggplot(growthYield.dat %>%
+           filter(Spp=="Sitka_spruce", YC==6), aes(x=Age, y=(B_wpS)/(B_s+B_c+B_r))) +
+    geom_line()
+
+  ggplot(growthYield.dat %>%
+           filter(Spp=="Sitka_spruce", YC==6), aes(x=Age, y=(B_wpF+B_wpM+B_wpS)/(B_s+B_c+B_r))) +
+    geom_line()
+
+}
+
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
 ### These have been added to the UI already
 # core.dat$Peatland.restoration$t_restore_microbes <- c(Exp = 10, Min = 8, Max = 12) # time to restoration of microbial function [yr]
@@ -28,15 +64,6 @@ growthYield.dat <- getGrowthYieldData()
 #################### NEW INPUT VARIABLES. NEED TO ADD THESE TO UI ##############
 
 ## If YC not passed by user compute here and store in variable forestry.dat$Area.X$YC
-
-## Counterfactuals in matrix form for fast multiplication
-# E_mat <- matrix(c(core.dat$Counterfactual$E_coal,
-#                   core.dat$Counterfactual$E_grid_mix,
-#                   core.dat$Counterfactual$E_fossil_mix),
-#                 ncol=3,
-#                 byrow = T,
-#                 dimnames = list(c("coal", "grid_mix", "fossil_mix"),
-#                                 names(core.dat$Counterfactual$E_coal)))
 
 ################################################################################
 ##################### CO2 sequestration loss from Forestry #####################
@@ -48,72 +75,101 @@ S_forest <- C_sequest_in_trees_RM(core.dat,
 # This needs to be multiplied by 30.66 to get from units of C to CO2 for carbon payback!
 # Leave in units C for now for the wood product modelling
 
-plot(NPP_pa ~ t, S_forest$Area.1$Exp, type='l')
-plot(NPP ~ t, S_forest$Area.1$Exp, type='l')
+if (0) {
+  S_forest_df <- bind_rows(lapply(seq_along(S_forest), FUN = function(x) {
+    res <- lapply(seq_along(S_forest[[x]]), FUN = function(y) {
+      df <- as.data.frame(unname(S_forest[[x]][y])) %>%
+        select(t, NPP, NPP_pa)
+      df$Area <- names(S_forest)[x]
+      df$Est <- names(S_forest[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
 
-plot(NPP_tot_pa ~ t, S_forest$Area.1$Exp, type='l')
-plot(NPP_tot ~ t, S_forest$Area.1$Exp, type='l')
+  ggplot(S_forest_df, aes(x=t, y=NPP_pa, linetype=factor(Area))) +
+    geom_line(col="green3") +
+    scale_x_continuous(limits = c(min(S_forest_df$t), 200)) +
+    facet_grid(Est ~ ., scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2 ha-1]", col="n", linetype="")
 
+  ggplot(S_forest_df, aes(x=t, y=NPP, linetype=factor(Area))) +
+    geom_line(col="green3") +
+    scale_x_continuous(limits = c(min(S_forest_df$t), 200)) +
+    facet_grid(Est ~ ., scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2]", col="n", linetype="")
+}
 
 ################################################################################
 ############ Harvesting/Restoration emissions and wood product decay ###########
 ################################################################################
 
-# Q what is the appropriate volume for the harvesting? Above ground only?
+# JDebug: What is the appropriate volume for the harvesting? Above ground only?
 L_forest <- Forestry_CO2_loss_detail_RM(core.dat,
                                         forestry.dat,
                                         growthYield.dat,
                                         S_forest)
 
-################################################################################
-############################ Volume of peat drained ############################
-################################################################################
+if (0) {
+  L_forest_df <- lapply(seq_along(L_forest), FUN = function(x) {
+    res <- lapply(seq_along(L_forest[[x]]), FUN = function(y) {
+      res2 <- lapply(seq_along(L_forest[[x]][[y]]), FUN = function(z) {
+        df <- as.data.frame(unname(L_forest[[x]][[y]][z])) %>%
+          pivot_longer(cols = starts_with(c("L_", "S_")),
+                       names_to = "source")
+        df$Area <- names(L_forest)[x]
+        df$Est <- names(L_forest[[x]][[y]])[z]
+        return(df)
+      })
+      return(res2)
+    })
+    return(res)
+  })
 
-# AV_indirect <- AV_peat_drained(core.dat = core.dat,
-#                                construct.dat = construct.dat)
+  L_forest_df <- bind_rows(unlist(L_forest_df, recursive = F))
 
-################################################################################
-############################ Volume of peat removed ############################
-################################################################################
+  L_forest_df$sink <- -1
+  L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
 
-# AV_direct <- AV_peat_removed(core.dat = core.dat,
-#                              construct.dat = construct.dat)
-
-################################################################################
-######################### Loss of CO2 fixing potential #########################
-################################################################################
-
-# L_fix <- Loss_of_CO2_fix_pot(core.dat = core.dat,
-#                              AV_direct = AV_direct,
-#                              AV_indirect = AV_indirect)
-
-S_bog_sequ <- list()
-# nn <- 1:5
-nn <- c(1,2.25,5)
-# nn <- c(1,3,8)
-for (n in nn) {
-  core.dat$Bog.plants$n_restore <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
-  S_bog_sequ[[length(S_bog_sequ)+1]] <- Bog_plant_restoration(core.dat, AV_indirect) # Replace AV_indirect with estimate of total area deforested from UI
+  ## I don't know if this is working as I don't yet have correct values for wood product biomass allocation
+  ggplot(L_forest_df, aes(x=t, y=value*sink, linetype=factor(source))) +
+    geom_line(col="red3") +
+    scale_x_continuous(limits = c(0, 200)) +
+    facet_grid(Est ~ Area, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Wood product emissions [tCO2 ha-1]", linetype="")
 }
 
-S_bog_sequ_df <- bind_rows(lapply(seq(S_bog_sequ),
-                                  FUN = function(x) {
-                                    df <- as.data.frame(S_bog_sequ[[x]])
-                                    df$n <- nn[x]
-                                    df$t <- 0:(nrow(df)-1)
-                                    return(df)
-                                  }))
+################################################################################
+########################### Bog plant sequestration ############################
+################################################################################
 
+S_bog_plant <- Bog_plant_sequestration_RM(core.dat,
+                                          forestry.dat)
 
-S_bog_sequ_df <- S_bog_sequ_df %>%
-  pivot_longer(cols=c(Exp, Min, Max), names_to = "Est", values_to = "val")
+if (0) {
+  S_bog_plants_df <- bind_rows(lapply(seq_along(S_bog_plants), FUN = function(x) {
+    res <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
+      df <- as.data.frame(S_bog_plants[[x]][y])
+      names(df) <- "S"
+      df$Area <- names(S_bog_plants)[x]
+      df$n <- n_restore[y]
+      df$t <- 1:nrow(df)
+      df$Est <- names(S_bog_plants[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
 
-p1 <- ggplot(S_bog_sequ_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
-  geom_line() +
-  scale_x_continuous(limits = c(0, 40)) +
-  facet_grid(Est ~ ., scales="free_y") +
-  theme_bw() +
-  labs(x="Time since harvesting [y]", y="Bog plant sequestration [tCO2]", col="n")
+  ggplot(S_bog_plants_df, aes(x=t, y=S, col=factor(n), linetype=factor(Area))) +
+    geom_line() +
+    scale_x_continuous(limits = c(0, 200)) +
+    facet_grid(Est ~ ., scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Bog plant sequestration [tCO2]", col="n", linetype="")
+}
 
 ################################################################################
 ########################## Emissions rates from soils ##########################

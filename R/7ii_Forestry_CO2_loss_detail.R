@@ -328,7 +328,6 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   E_fossil_mix <- rep(list(core.dat$Counterfactual$E_fossil_mix), length = length(grep("Area", names(forestry.dat))))
   names(E_fossil_mix) <- names(r_CBiomass)
 
-
   d_wpF <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpF")
   d_wpM <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpM")
   d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
@@ -411,15 +410,16 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
       L_harv_a <- V_a * A_harv[[x]][[y]] * E_harv[[x]][[y]]
 
-      return(unname(L_harv_a))
+      L_harv_a <- data.frame(t = 0,
+                             L_harv = unname(L_harv_a))
+      return(L_harv_a)
     })
 
-    L_harv_a <- unlist(L_harv_a)
     names(L_harv_a) <- names(E_harv[[x]])
     return(L_harv_a)
   })
 
-  names(L_harv) <- names(C_forest)
+  names(L_harv) <- names(E_harv)
 
   # Extract carbon content of the forestry at harvesting
   C_forest <- lapply(seq_along(S_forest), FUN = function(x) {
@@ -517,16 +517,22 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(B_wp) <- names(C_wp)
 
   # Model exponential decay in wood product stored CO2
-  ## Simulate for long enough that the slowest decaying product reaches a proportion C_min of initial value
-  C_min <- 0.01
-  tMax <- -max(unlist(alpha)) * log(C_min)
+  if (0) {
+    ## Simulate for long enough that the slowest decaying product reaches a proportion C_min of initial value
+    C_min <- 0.01
+    tMax <- -max(unlist(alpha)) * log(C_min)
+  } else {
+    ## Set max simulation time to 500
+    tMax <- 500
+  }
+
   tt <- 0:signif(tMax, digits = 1) # round to nearest 100
   CO2_wp_decay <- lapply(seq_along(CO2_wp), FUN = function (x) {
     CO2_wp_decay_a <- lapply(seq_along(CO2_wp[[x]]), FUN = function(y) {
       res <- data.frame(t=tt,
-                        S_wpF=CO2_wp[[x]][[y]]["wpF"] * exp(-tt/alpha_wp["wpF"]),
-                        S_wpM=CO2_wp[[x]][[y]]["wpM"] * exp(-tt/alpha_wp["wpM"]),
-                        S_wpS=CO2_wp[[x]][[y]]["wpS"] * exp(-tt/alpha_wp["wpS"]))
+                        S_wpF=CO2_wp[[x]][[y]]["wpF"] * exp(-tt/alpha[[x]]["wpF"]),
+                        S_wpM=CO2_wp[[x]][[y]]["wpM"] * exp(-tt/alpha[[x]]["wpM"]),
+                        S_wpS=CO2_wp[[x]][[y]]["wpS"] * exp(-tt/alpha[[x]]["wpS"]))
 
       res <- res %>%
         mutate(L_wpF = replace_na(lag(S_wpF, n = 1) - S_wpF, 0),
@@ -558,6 +564,10 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   L_T_wp <- lapply(seq_along(B_wp), FUN = function (x) {
     L_T_wp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
       L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * forestry.dat$Emissions$E_transport[y] / 1e6 # unit conversion g CO2 to t CO2
+      L_T <- data.frame(t = 0,
+                        L_T_wpF = unname(L_T["wpF"]),
+                        L_T_wpM = unname(L_T["wpM"]),
+                        L_T_wpS = unname(L_T["wpS"]))
       return(L_T)
     })
     names(L_T_wp_a) <- names(B_wp[[x]])
@@ -585,15 +595,55 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
                        l3 = E_fossil_mix, # emissions factor of counterfactual
                        func = "*")
 
+  S_biofuel <- lapply(S_biofuel, FUN = as.list)
+
+  S_biofuel <- lapply(seq_along(S_biofuel), FUN = function(x) {
+    res <- lapply(seq_along(S_biofuel[[x]]), FUN = function(y) {
+      df <- data.frame(t = 0,
+                       S_biofuel = S_biofuel[[x]][y])
+      names(df)[2] <- "S_biofuel"
+      return(df)
+    })
+    names(res) <- names(S_biofuel[[x]])
+    return(res)
+  })
+
+  names(S_biofuel) <- names(B_biofuel)
+
   L_T_biofuel <- list_op(l1 = B_biofuel,
                          l2 = d_biofuel,
                          l3 = rep(list(forestry.dat$Emissions$E_transport), length = length(grep("Area", names(forestry.dat)))),
                          func = "*")
 
-  return(list(L_harv = L_harv,
-              L_mulch = NULL,
-              L_wp = CO2_wp_decay,
-              L_T_wp = L_T_wp,
-              S_biofuel = S_biofuel,
-              L_T_biofuel = L_T_biofuel))
+  L_T_biofuel <- lapply(L_T_biofuel, FUN = as.list)
+
+  L_T_biofuel <- lapply(seq_along(L_T_biofuel), FUN = function(x) {
+    res <- lapply(seq_along(L_T_biofuel[[x]]), FUN = function(y) {
+      df <- data.frame(t = 0,
+                       L_T_biofuel = L_T_biofuel[[x]][y])
+      names(df)[2] <- "L_T_biofuel"
+      return(df)
+    })
+    names(res) <- names(L_T_biofuel[[x]])
+    return(res)
+  })
+
+  names(L_T_biofuel) <- names(B_biofuel)
+
+  # Invert data structure
+  L_forest <- vector(mode = "list", length=length(grep("Area", names(forestry.dat))))
+  names(L_forest) <- grep("Area", names(forestry.dat), value=T)
+  for (i in 1:length(L_forest)) {
+    L_forest[[i]]$L_harv <- L_harv[[i]]
+    L_forest[[i]]$L_mulch <- NULL
+    L_forest[[i]]$L_terraform <- NULL
+    L_forest[[i]]$L_bund <- NULL
+    L_forest[[i]]$L_veg_rest <- NULL
+    L_forest[[i]]$L_wp <- CO2_wp_decay[[i]]
+    L_forest[[i]]$L_T_wp <- L_T_wp[[i]]
+    L_forest[[i]]$S_biofuel <- S_biofuel[[i]]
+    L_forest[[i]]$L_T_biofuel <- L_T_biofuel[[i]]
+  }
+
+  return(L_forest)
 }
