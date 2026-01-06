@@ -6,7 +6,7 @@
 #' @param R_tot estimated emissions rates
 #' @return L_indirect
 #' @export
-CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
+CO2_loss_restoration <- function(core.dat, R_tot) {
 
   ## This function will estimate the emissions from the site following harvesting and restoration interventions
   ## assuming a non-linear restoration of ecosystem function parameterised by the user
@@ -16,17 +16,26 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
 
   # Extract input variables for easy access
   peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
-  A_indirect <- AV_indirect$Total$a
-  t_fallow <- core.dat$Peatland.restoration$t_fallow # NEW UI VARIABLE - time between felling and restoration
-  t_restore_microbes <- core.dat$Peatland.restoration$t_restore_microbes # NEW UI VARIABLE - time to restoration of microbial function
-  n_restore_microbes <- core.dat$Peatland.restoration$n_restore_microbes # NEW UI VARIABLE - shape parameter for restoration of microbial function
+  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
+  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow") # time between felling and restoration
+  t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_microbes") # time to restoration of microbial function
+  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_microbes") # shape parameter for restoration of microbial function
 
   ## Compute emissions rates from deforested, unrestored peatland
-  D_f <- 0 # Assume D_f = 0 for drained peats
+  D_f <- 0 # Assume flooded days per year D_f = 0 for drained, unrestored peats
   pD_f <- D_f / 365
 
-  CO2_drained <- (A_indirect / 10000) * ((R_tot$R_CO2_drained * pD_f) + (R_tot$R_CO2_drained * (1 - pD_f)))
-  CH4_drained <- (A_indirect / 10000) * ((R_tot$R_CH4_drained * pD_f) + (R_tot$R_CH4_drained * (1 - pD_f)))
+  CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+    return(res)
+  })
+  names(CO2_dry) <- names(A_harv)
+
+  CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+    return(res)
+  })
+  names(CH4_dry) <- names(A_harv)
 
   ## Compute emissions rates from deforested, restored peatland
 
@@ -37,124 +46,90 @@ CO2_loss_restoration <- function(core.dat, AV_indirect, R_tot) {
   }
   pD_f <- D_f / 365
 
-  CO2_restored <- (A_indirect / 10000) * ((R_tot$R_CO2_undrained * pD_f) + (R_tot$R_CO2_undrained * (1 - pD_f)))
-  CH4_restored <- (A_indirect / 10000) * ((R_tot$R_CH4_undrained * pD_f) + (R_tot$R_CH4_undrained * (1 - pD_f)))
+  CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+    return(res)
+  })
+  names(CO2_wet) <- names(A_harv)
 
-  ## Interpolate emissions across restoration phase
-  L_CO2_rest_phase <- lapply(seq(CO2_drained),
-                             FUN = function(x) {
-                               rest_dyn_mod(t = 1:t_restore_microbes[x],
-                                            n = n_restore_microbes[x],
-                                            ymin = CO2_drained[x],
-                                            ymax = CO2_restored[x],
-                                            convThresh = conv_val)
-                             })
+  CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+    return(res)
+  })
+  names(CH4_wet) <- names(A_harv)
 
-  L_CH4_rest_phase <- lapply(seq(CO2_drained),
-                             FUN = function(x) {
-                               rest_dyn_mod(t = 1:t_restore_microbes[x],
-                                            n = n_restore_microbes[x],
-                                            ymin = CH4_drained[x],
-                                            ymax = CH4_restored[x],
-                                            convThresh = conv_val)
-                             })
+  ## Interpolate emissions across restoration phase (arbitrary asymptotic function)
+  L_CO2_microbes <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
+      rest_dyn_mod(t = 1:t_restore[[x]][y],
+                   n = n_restore[[x]][y],
+                   ymin = CO2_dry[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   ymax = CO2_wet[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   convThresh = conv_val)
+    })
+    names(res) <- names(A_harv[[x]])
+    return(res)
+  })
+
+  L_CH4_microbes <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
+      rest_dyn_mod(t = 1:t_restore[[x]][y],
+                   n = n_restore[[x]][y],
+                   ymin = CH4_dry[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   ymax = CH4_wet[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   convThresh = conv_val)
+    })
+    names(res) <- names(A_harv[[x]])
+    return(res)
+  })
 
   # Add fallow period to time series
-  L_CO2_rest_phase <- lapply(seq(L_CO2_rest_phase),
-                             FUN = function(x) c(rep(unname(CO2_drained[x]), t_fallow[x]), L_CO2_rest_phase[[x]]))
+  L_CO2_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
+      return(c(rep(CO2_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CO2_microbes[[x]][y]))))
+    })
+    names(res) <- names(L_CO2_microbes[[x]])
+    return(res)
+  })
 
-  L_CH4_rest_phase <- lapply(seq(L_CH4_rest_phase),
-                             FUN = function(x) c(rep(unname(CH4_drained[x]), t_fallow[x]), L_CH4_rest_phase[[x]]))
+  L_CH4_microbes <- lapply(seq_along(L_CH4_microbes), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
+      return(c(rep(CH4_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CH4_microbes[[x]][y]))))
+    })
+    names(res) <- names(L_CH4_microbes[[x]])
+    return(res)
+  })
 
-  # Extend time series to 100 years (if t_payback > 100, these will be extended again in the run script)
-  L_CO2_rest_phase <- lapply(seq(L_CO2_rest_phase),
-                             FUN = function(x) {
-                               ext <- 101 - length(L_CO2_rest_phase[[x]])
-                               return(c(L_CO2_rest_phase[[x]], rep(unname(CO2_restored[x]), ext)))
-                             })
+  # Extend time series to 500 years (if t_payback > 500, these will need to be extended again in the run script)
+  L_CO2_microbes <- lapply(seq(L_CO2_microbes), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CO2_microbes[[x]][y]))
+      return(unname(c(unlist(L_CO2_microbes[[x]][y]), rep(CO2_wet[[x]][y], ext))))
+    })
+    names(res) <- names(L_CO2_microbes[[x]])
+    return(res)
+  })
 
-  L_CH4_rest_phase <- lapply(seq(L_CH4_rest_phase),
-                             FUN = function(x) {
-                               ext <- 101 - length(L_CH4_rest_phase[[x]])
-                               return(c(L_CH4_rest_phase[[x]], rep(unname(CH4_restored[x]), ext)))
-                             })
+  L_CH4_microbes <- lapply(seq(L_CH4_microbes), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CH4_microbes[[x]][y]))
+      return(unname(c(unlist(L_CH4_microbes[[x]][y]), rep(CH4_wet[[x]][y], ext))))
+    })
+    names(res) <- names(L_CH4_microbes[[x]])
+    return(res)
+  })
 
-  names(L_CO2_rest_phase) <- c("Exp", "Min", "Max")
-  names(L_CH4_rest_phase) <- c("Exp", "Min", "Max")
+  names(L_CO2_microbes) <- names(A_harv)
+  names(L_CH4_microbes) <- names(A_harv)
 
-  L_peat_rest_phase <- list(Tot = list_op(l1 = L_CO2_rest_phase,
-                                          l2 = L_CH4_rest_phase,
-                                          func = "+"),
-                            CO2 = L_CO2_rest_phase,
-                            CH4 = L_CH4_rest_phase)
+  return(L_microbes = list(CO2 = L_CO2_microbes,
+                           CH4 = L_CH4_microbes))
 
+  # L_peat_rest_phase <- list(Tot = list_op(l1 = L_CO2_rest_phase,
+  #                                         l2 = L_CH4_rest_phase,
+  #                                         func = "+"),
+  #                           CO2 = L_CO2_rest_phase,
+  #                           CH4 = L_CH4_rest_phase)
 
-  if (0) {
-    maxYear <- max(t_fallow) + max(t_restore_microbes) + 10
-    par(mfrow=c(1,3))
-    plot(x=seq(max(t_restore_microbes)),
-         y=rep(max(unlist(L_peat_rest_phase$CO2)), max(t_restore_microbes)),
-         xlim=c(0,maxYear),
-         ylim=c(min(unlist(L_peat_rest_phase$CO2)),max(unlist(L_peat_rest_phase$CO2))),
-         xlab="Time since restoration [yr]",
-         ylab="Total CO2 emissions [tCO2]",
-         type='n')
-    for (i in 1:length(L_peat_rest_phase$CO2)) {
-      lines(x=0:100,
-            y=L_peat_rest_phase$CO2[[i]])
-      points(x=0,
-             y=L_peat_rest_phase$CO2[[i]][1],
-             col="black")
-      points(x=t_fallow[i]-1,
-             y=L_peat_rest_phase$CO2[[i]][t_fallow[i]],
-             col="red")
-      points(x=t_fallow[i]+t_restore_microbes[i]+1,
-             y=L_peat_rest_phase$CO2[[i]][t_fallow[i]+t_restore_microbes[i]+1],
-             col="blue")
-    }
-
-    plot(x=seq(max(t_restore_microbes)),
-         y=rep(max(unlist(L_peat_rest_phase$CH4)), max(t_restore_microbes)),
-         xlim=c(0,maxYear),
-         ylim=c(min(unlist(L_peat_rest_phase$CH4)),max(unlist(L_peat_rest_phase$CH4))),
-         xlab="Time since restoration [yr]",
-         ylab="Total CH4 emissions [eq. tCO2]",
-         type='n')
-    for (i in 1:length(L_peat_rest_phase$CH4)) {
-      lines(x=0:100,
-            y=L_peat_rest_phase$CH4[[i]])
-      points(x=0,
-             y=L_peat_rest_phase$CH4[[i]][1],
-             col="black")
-      points(x=t_fallow[i]-1,
-             y=L_peat_rest_phase$CH4[[i]][t_fallow[i]],
-             col="red")
-      points(x=t_fallow[i]+t_restore_microbes[i]+1,
-             y=L_peat_rest_phase$CH4[[i]][t_fallow[i]+t_restore_microbes[i]+1],
-             col="blue")
-    }
-
-    plot(x=seq(max(t_restore_microbes)),
-         y=rep(max(unlist(L_peat_rest_phase$Tot)), max(t_restore_microbes)),
-         xlim=c(0,maxYear),
-         ylim=c(min(unlist(L_peat_rest_phase$Tot)),max(unlist(L_peat_rest_phase$Tot))),
-         xlab="Time since restoration [yr]",
-         ylab="Total gaseous C emissions [eq. tCO2]",
-         type='n')
-    for (i in 1:length(L_peat_rest_phase$Tot)) {
-      lines(x=0:100,
-            y=L_peat_rest_phase$Tot[[i]])
-      points(x=0,
-             y=L_peat_rest_phase$Tot[[i]][1],
-             col="black")
-      points(x=t_fallow[i]-1,
-             y=L_peat_rest_phase$Tot[[i]][t_fallow[i]],
-             col="red")
-      points(x=t_fallow[i]+t_restore_microbes[i]+1,
-             y=L_peat_rest_phase$Tot[[i]][t_fallow[i]+t_restore_microbes[i]+1],
-             col="blue")
-    }
-  }
-
-  return(L_peat_rest_phase)
+  # return(L_peat_rest_phase)
 }

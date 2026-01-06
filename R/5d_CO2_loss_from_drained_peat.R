@@ -33,14 +33,14 @@ CO2_loss_drained <- function(core.dat, AV_indirect, R_tot) {
   A_t <- (A_indirect / 10000) * (t_wf + t_restore)  # convert area to ha
   pD_f <- D_f / 365
 
-  CO2_drained_rest <- A_t * (R_tot$R_CO2_drained)
-  CH4_drained_rest <- A_t * (R_tot$R_CH4_drained)
+  CO2_drained_rest <- A_t * (R_tot$R_CO2_dry)
+  CH4_drained_rest <- A_t * (R_tot$R_CH4_dry)
   L_drained_rest <- list(Tot = CO2_drained_rest + CH4_drained_rest,
                          CO2 = CO2_drained_rest,
                          CH4 = CH4_drained_rest) # D_f = 0
 
-  CO2_undrained_rest <- A_t * ((R_tot$R_CO2_undrained * pD_f) + (R_tot$R_CO2_drained * (1 - pD_f)))
-  CH4_undrained_rest <- A_t * ((R_tot$R_CH4_undrained * pD_f) + (R_tot$R_CH4_drained * (1 - pD_f)))
+  CO2_undrained_rest <- A_t * ((R_tot$R_CO2_wet * pD_f) + (R_tot$R_CO2_dry * (1 - pD_f)))
+  CH4_undrained_rest <- A_t * ((R_tot$R_CH4_wet * pD_f) + (R_tot$R_CH4_dry * (1 - pD_f)))
   L_undrained_rest <- list(Tot = CO2_undrained_rest + CH4_undrained_rest,
                            CO2 = CO2_undrained_rest,
                            CH4 = CH4_undrained_rest)

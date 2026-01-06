@@ -4,14 +4,14 @@
 \alias{CO2_loss_restoration}
 \title{CO2_loss_restoration}
 \usage{
-CO2_loss_restoration(core.dat, AV_indirect, R_tot)
+CO2_loss_restoration(core.dat, R_tot)
 }
 \arguments{
 \item{core.dat}{UI data}
 
-\item{AV_indirect}{Area/Volume of drained peat}
-
 \item{R_tot}{estimated emissions rates}
+
+\item{AV_indirect}{Area/Volume of drained peat}
 }
 \value{
 L_indirect

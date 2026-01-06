@@ -102,11 +102,6 @@ Will you attempt to block all artificial ditches and facilitate  rewetting?,NA,S
 Will the habitat of the site be restored on decommissioning?,restore_hab_in,Site.restoration,core
 Will you control grazing on degraded areas?,NA,Site.restoration,core
 Will you manage areas to favour reintroduction of species,NA,Site.restoration,core
-Peat land restoration following deforestation,NA,Peatland.restoration,core
-Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Peatland.restoration,core
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Peatland.restoration,core
-Shape parameter for restoration of microbial community function,n_restore_microbes,Peatland.restoration,core
-Shape parameter for restoration of plant community function,n_restore,Peatland.restoration,core
 Choice of methodology for calculating emission factors,em_factor_meth_in,Em.factor.meth,core
 Windfarm characteristics,NA,Windfarm,forestry
 Location,NA,Windfarm,forestry
@@ -156,6 +151,13 @@ Replanting regime,NA,Area.1,forestry
 Years after felling when replanting occurs,t_replant,Area.1,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.1,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.1,forestry
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.1,forestry
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.1,forestry
+Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.1,forestry
+Shape parameter for restoration of microbial community function,n_restore_microbes,Area.1,forestry
+Shape parameter for restoration of plant community function,n_restore_plants,Area.1,forestry
+Pre-restoration water table depth (m),d_wt_drained,Area.1,forestry
+Expected post-restoration water table depth (m),d_wt_restored,Area.1,forestry
 AREA 2,NA,Area.2,forestry
 Number of turbines in this area,n_turb,Area.2,forestry
 Power curve - NOT USED!,NA,Area.2,forestry
@@ -190,6 +192,13 @@ Replanting regime,NA,Area.2,forestry
 Years after felling when replanting occurs,t_replant,Area.2,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.2,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.2,forestry
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.2,forestry
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.2,forestry
+Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.2,forestry
+Shape parameter for restoration of microbial community function,n_restore_microbes,Area.2,forestry
+Shape parameter for restoration of plant community function,n_restore_plants,Area.2,forestry
+Pre-restoration water table depth (m),d_wt_drained,Area.2,forestry
+Expected post-restoration water table depth (m),d_wt_restored,Area.2,forestry
 AREA 3,NA,Area.3,forestry
 Number of turbines in this area,n_turb,Area.3,forestry
 Power curve - NOT USED!,NA,Area.3,forestry
@@ -224,6 +233,13 @@ Replanting regime,NA,Area.3,forestry
 Years after felling when replanting occurs,t_replant,Area.3,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.3,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.3,forestry
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.3,forestry
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.3,forestry
+Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.3,forestry
+Shape parameter for restoration of microbial community function,n_restore_microbes,Area.3,forestry
+Shape parameter for restoration of plant community function,n_restore_plants,Area.3,forestry
+Pre-restoration water table depth (m),d_wt_drained,Area.3,forestry
+Expected post-restoration water table depth (m),d_wt_restored,Area.3,forestry
 AREA 4,NA,Area.4,forestry
 Number of turbines in this area,n_turb,Area.4,forestry
 Power curve - NOT USED!,NA,Area.4,forestry
@@ -258,6 +274,13 @@ Replanting regime,NA,Area.4,forestry
 Years after felling when replanting occurs,t_replant,Area.4,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.4,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.4,forestry
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.4,forestry
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.4,forestry
+Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.4,forestry
+Shape parameter for restoration of microbial community function,n_restore_microbes,Area.4,forestry
+Shape parameter for restoration of plant community function,n_restore_plants,Area.4,forestry
+Pre-restoration water table depth (m),d_wt_drained,Area.4,forestry
+Expected post-restoration water table depth (m),d_wt_restored,Area.4,forestry
 AREA 5,NA,Area.5,forestry
 Number of turbines in this area,n_turb,Area.5,forestry
 Power curve - NOT USED!,NA,Area.5,forestry
@@ -292,6 +315,13 @@ Replanting regime,NA,Area.5,forestry
 Years after felling when replanting occurs,t_replant,Area.5,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.5,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.5,forestry
+Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.5,forestry
+Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.5,forestry
+Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.5,forestry
+Shape parameter for restoration of microbial community function,n_restore_microbes,Area.5,forestry
+Shape parameter for restoration of plant community function,n_restore_plants,Area.5,forestry
+Pre-restoration water table depth (m),d_wt_drained,Area.5,forestry
+Expected post-restoration water table depth (m),d_wt_restored,Area.5,forestry
 AREA 1,NA,Area.1,construct
 Number of turbines in this area - Error! Total in areas > total on site!,n_turb,Area.1,construct
 Number of turbines in this area,n_turb,Area.1,construct

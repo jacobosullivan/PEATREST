@@ -132,41 +132,51 @@ if (0) {
 
   L_forest_df$sink <- -1
   L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
+  L_forest_df$discrete <- 0
+  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "S_biofuel")] <- 1
+  L_forest_df <- L_forest_df %>%
+    mutate(value = ifelse(value==0, NA, value))
+
+  unique(L_forest_df$source)
 
   ## I don't know if this is working as I don't yet have correct values for wood product biomass allocation
-  ggplot(L_forest_df, aes(x=t, y=value*sink, linetype=factor(source))) +
-    geom_line(col="red3") +
+  sources_cont <- c() #c("L_harv", "L_T_biofuel", "S_biofuel")
+  sources_disc <- c("L_harv", "L_T_biofuel", "S_biofuel")
+  ggplot(L_forest_df, aes(x=t, y=value*sink)) +
+    geom_point(data = L_forest_df %>% filter(source %in% sources_disc), aes(shape=factor(source)), col="red3") +
+    geom_line(data = L_forest_df %>% filter(source %in% sources_cont), aes(linetype=factor(source)), col="red3") +
     scale_x_continuous(limits = c(0, 200)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Wood product emissions [tCO2 ha-1]", linetype="")
+    labs(x="Time since harvesting [y]", y="Wood product emissions [tCO2 ha-1]", linetype="", shape="")
 }
 
 ################################################################################
 ########################### Bog plant sequestration ############################
 ################################################################################
 
-S_bog_plant <- Bog_plant_sequestration_RM(core.dat,
-                                          forestry.dat)
+S_bog_plants <- Bog_plant_sequestration_RM(core.dat,
+                                           forestry.dat)
 
 if (0) {
+  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_plants")
   S_bog_plants_df <- bind_rows(lapply(seq_along(S_bog_plants), FUN = function(x) {
     res <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
       df <- as.data.frame(S_bog_plants[[x]][y])
-      names(df) <- "S"
+      colnames(df) <- "S"
       df$Area <- names(S_bog_plants)[x]
-      df$n <- n_restore[y]
-      df$t <- 1:nrow(df)
+      df$n <- n_restore[[x]][y]
+      df$t <- 0:(nrow(df)-1)
       df$Est <- names(S_bog_plants[[x]])[y]
       return(df)
     })
     return(res)
   }))
 
-  ggplot(S_bog_plants_df, aes(x=t, y=S, col=factor(n), linetype=factor(Area))) +
+  ggplot(S_bog_plants_df, aes(x=t, y=S, col=factor(n))) +
     geom_line() +
     scale_x_continuous(limits = c(0, 200)) +
-    facet_grid(Est ~ ., scales="free_y") +
+    facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Bog plant sequestration [tCO2]", col="n", linetype="")
 }
@@ -175,63 +185,70 @@ if (0) {
 ########################## Emissions rates from soils ##########################
 ################################################################################
 
-R_tot <- Emissions_rates_soils(core.dat = core.dat,
-                               construct.dat = construct.dat,
-                               AV_indirect = AV_indirect)
+R_tot <- Emissions_rates_soils_RM(core.dat = core.dat,
+                                  construct.dat = construct.dat)
 
 ################################################################################
 ############################### Loss of Soil CO2 ###############################
 ################################################################################
 
-L_indirect <- CO2_loss_drained(core.dat = core.dat,
-                               AV_indirect = AV_indirect,
-                               R_tot = R_tot)
+# L_indirect <- CO2_loss_drained(core.dat = core.dat,
+#                                AV_indirect = AV_indirect,
+#                                R_tot = R_tot)
+#
+# L_direct <- CO2_loss_removed(core.dat = core.dat,
+#                              AV_direct = AV_direct,
+#                              L_indirect = L_indirect)
+#
+# L_soil <- CO2_loss_from_soil(L_direct = L_direct,
+#                              L_indirect = L_indirect)
 
-L_direct <- CO2_loss_removed(core.dat = core.dat,
-                             AV_direct = AV_direct,
-                             L_indirect = L_indirect)
+L_microbes <- CO2_loss_restoration(core.dat = core.dat,
+                                   R_tot = R_tot)
 
-L_soil <- CO2_loss_from_soil(L_direct = L_direct,
-                             L_indirect = L_indirect)
+if (0) {
+  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_microbes")
+  L_CO2_microbes_df <- bind_rows(lapply(seq_along(L_microbes$CO2), FUN = function(x) {
+    res <- lapply(seq_along(L_microbes$CO2[[x]]), FUN = function(y) {
+      df <- as.data.frame(L_microbes$CO2[[x]][y])
+      colnames(df) <- "L"
+      df$Area <- names(L_microbes$CO2)[x]
+      df$n <- n_restore[[x]][y]
+      df$t <- 0:(nrow(df)-1)
+      df$Est <- names(L_microbes$CO2[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
 
-L_restoration <- list()
-# nn <- 1:5
-nn <- c(1,2.25,5)
-# nn <- c(1,3,8)
-for (n in nn) {
-  core.dat$Peatland.restoration$n_restore_microbes <- c(Exp = n, Min = n, Max = n) # shape parameter for restoration of hydrology: 1 gives concave downward function (rapid increase in function)
-  L_restoration[[length(L_restoration)+1]] <- CO2_loss_restoration(core.dat, AV_indirect, R_tot)
+  L_CO2_microbes_df$C <- "CO2"
+
+  L_CH4_microbes_df <- bind_rows(lapply(seq_along(L_microbes$CH4), FUN = function(x) {
+    res <- lapply(seq_along(L_microbes$CH4[[x]]), FUN = function(y) {
+      df <- as.data.frame(L_microbes$CH4[[x]][y])
+      colnames(df) <- "L"
+      df$Area <- names(L_microbes$CH4)[x]
+      df$n <- n_restore[[x]][y]
+      df$t <- 0:(nrow(df)-1)
+      df$Est <- names(L_microbes$CH4[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
+
+  L_CH4_microbes_df$C <- "CH4"
+
+  L_microbes_df <- rbind(L_CO2_microbes_df,
+                         L_CH4_microbes_df)
+
+  L_microbes_df$C <- factor(L_microbes_df$C, levels = c("CO2", "CH4"))
+  ggplot(L_microbes_df, aes(x=t, y=L, col=factor(n), linetype=factor(C))) +
+    geom_line() +
+    scale_x_continuous(limits = c(0, 50)) +
+    facet_grid(Est ~ Area, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Gaseous carbon emissions [tCO2 eq.]", col="n", linetype="")
 }
-
-L_restoration_df <- bind_rows(lapply(seq(L_restoration),
-                                     FUN = function(y) lapply(seq(L_restoration[[y]]),
-                                                              FUN = function(x) {
-                                                                source <- names(L_restoration[[y]])[x]
-                                                                df <- as.data.frame(L_restoration[[y]][[x]])
-                                                                df$source <- source
-                                                                df$n <- nn[y]
-                                                                df$t <- 0:(nrow(df)-1)
-                                                                return(df)
-                                                              })))
-
-L_restoration_df$source <- factor(L_restoration_df$source, levels=c("CO2", "CH4", "Tot"))
-L_restoration_df <- L_restoration_df %>%
-  pivot_longer(cols=c(Exp, Min, Max), names_to = "Est", values_to = "val")
-
-p2 <- ggplot(L_restoration_df, aes(x=t, y=val, col=factor(n), group_by=Est)) +
-  geom_line() +
-  scale_x_continuous(limits = c(0, 20)) +
-  facet_grid(Est ~ source, scales="free_y") +
-  theme_bw() +
-  labs(x="Time since harvesting [y]", y="Gaseous C emissions [eq tCO2]", col="n")
-
-p1
-p2
-################################################################################
-####################### CO2 gain due to site improvement #######################
-################################################################################
-
-L_improvement <- CO_2_gain_site_improve(core.dat = core.dat)
 
 ################################################################################
 ######################### CO2 loss by DOC and POC loss #########################
