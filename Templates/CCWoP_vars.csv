@@ -115,6 +115,12 @@ Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
 Emissions due to forestry operations,NA,Emissions,forestry
 Emissions from felling (g CO2 m-3),E_harv,Emissions,forestry
 Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
+Emissions from mulching (g CO2 m-3),E_mulch,Emissions,forestry
+Emissions from damming (kg CO2 ha-1),E_dam,Emissions,forestry
+Emissions from bunding (kg CO2 ha-1),E_bund,Emissions,forestry
+Emissions from turfing (imported) (kg CO2 ha-1),E_turf_import,Emissions,forestry
+Emissions from turfing (local) (kg CO2 ha-1),E_turf_local,Emissions,forestry
+Emissions from lime and fertilser treatment (kg CO2 ha-1),E_fert,Emissions,forestry
 Forestry Plantation Characteristics,NA,Emissions,forestry
 Note - total number of turbines already specified: ,NA,Emissions,forestry
 AREA 1,NA,Area.1,forestry
@@ -133,10 +139,11 @@ Average tree height (m),h_tree,Area.1,forestry
 Stand age (yr),t_stand,Area.1,forestry
 Is forestry being rotated?,rotation,Area.1,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.1,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.1,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.1,forestry
 Distance to paper mill (km),d_wpF,Area.1,forestry
 Distance to wood panel mill (km),d_wpM,Area.1,forestry
 Distance to saw mill (km),d_wpS,Area.1,forestry
+Timber left in situ mulched?,mulch,Area.1,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.1,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.1,forestry
 Distance to biofuel plant (km),d_biofuel,Area.1,forestry
@@ -151,6 +158,7 @@ Replanting regime,NA,Area.1,forestry
 Years after felling when replanting occurs,t_replant,Area.1,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.1,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.1,forestry
+Peatland restoration,NA,Area.1,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.1,forestry
 Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.1,forestry
 Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.1,forestry
@@ -158,6 +166,12 @@ Shape parameter for restoration of microbial community function,n_restore_microb
 Shape parameter for restoration of plant community function,n_restore_plants,Area.1,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.1,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.1,forestry
+Management interventions,NA,Area.1,forestry
+Gully/grip (drain) blocking,dam,Area.1,forestry
+Surface/shallow bunding,bund,Area.1,forestry
+Direct re-vegetation of bog plants (imported turf),turf_import,Area.1,forestry
+Direct re-vegetation of bog plants (local turf),turf_local,Area.1,forestry
+Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.1,forestry
 AREA 2,NA,Area.2,forestry
 Number of turbines in this area,n_turb,Area.2,forestry
 Power curve - NOT USED!,NA,Area.2,forestry
@@ -174,10 +188,11 @@ Average tree height (m),h_tree,Area.2,forestry
 Stand age (yr),t_stand,Area.2,forestry
 Is forestry being rotated?,rotation,Area.2,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.2,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.2,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.2,forestry
 Distance to paper mill (km),d_wpF,Area.2,forestry
 Distance to wood panel mill (km),d_wpM,Area.2,forestry
 Distance to saw mill (km),d_wpS,Area.2,forestry
+Timber left in situ mulched?,mulch,Area.2,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.2,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.2,forestry
 Distance to biofuel plant (km),d_biofuel,Area.2,forestry
@@ -192,6 +207,7 @@ Replanting regime,NA,Area.2,forestry
 Years after felling when replanting occurs,t_replant,Area.2,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.2,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.2,forestry
+Peatland restoration,NA,Area.2,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.2,forestry
 Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.2,forestry
 Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.2,forestry
@@ -199,6 +215,12 @@ Shape parameter for restoration of microbial community function,n_restore_microb
 Shape parameter for restoration of plant community function,n_restore_plants,Area.2,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.2,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.2,forestry
+Management interventions,NA,Area.2,forestry
+Gully/grip (drain) blocking,dam,Area.2,forestry
+Surface/shallow bunding,bund,Area.2,forestry
+Direct re-vegetation of bog plants (imported turf),turf_import,Area.2,forestry
+Direct re-vegetation of bog plants (local turf),turf_local,Area.2,forestry
+Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.2,forestry
 AREA 3,NA,Area.3,forestry
 Number of turbines in this area,n_turb,Area.3,forestry
 Power curve - NOT USED!,NA,Area.3,forestry
@@ -215,10 +237,11 @@ Average tree height (m),h_tree,Area.3,forestry
 Stand age (yr),t_stand,Area.3,forestry
 Is forestry being rotated?,rotation,Area.3,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.3,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.3,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.3,forestry
 Distance to paper mill (km),d_wpF,Area.3,forestry
 Distance to wood panel mill (km),d_wpM,Area.3,forestry
 Distance to saw mill (km),d_wpS,Area.3,forestry
+Timber left in situ mulched?,mulch,Area.3,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.3,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.3,forestry
 Distance to biofuel plant (km),d_biofuel,Area.3,forestry
@@ -233,6 +256,7 @@ Replanting regime,NA,Area.3,forestry
 Years after felling when replanting occurs,t_replant,Area.3,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.3,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.3,forestry
+Peatland restoration,NA,Area.3,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.3,forestry
 Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.3,forestry
 Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.3,forestry
@@ -240,6 +264,12 @@ Shape parameter for restoration of microbial community function,n_restore_microb
 Shape parameter for restoration of plant community function,n_restore_plants,Area.3,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.3,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.3,forestry
+Management interventions,NA,Area.3,forestry
+Gully/grip (drain) blocking,dam,Area.3,forestry
+Surface/shallow bunding,bund,Area.3,forestry
+Direct re-vegetation of bog plants (imported turf),turf_import,Area.3,forestry
+Direct re-vegetation of bog plants (local turf),turf_local,Area.3,forestry
+Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.3,forestry
 AREA 4,NA,Area.4,forestry
 Number of turbines in this area,n_turb,Area.4,forestry
 Power curve - NOT USED!,NA,Area.4,forestry
@@ -256,10 +286,11 @@ Average tree height (m),h_tree,Area.4,forestry
 Stand age (yr),t_stand,Area.4,forestry
 Is forestry being rotated?,rotation,Area.4,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.4,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.4,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.4,forestry
 Distance to paper mill (km),d_wpF,Area.4,forestry
 Distance to wood panel mill (km),d_wpM,Area.4,forestry
 Distance to saw mill (km),d_wpS,Area.4,forestry
+Timber left in situ mulched?,mulch,Area.4,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.4,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.4,forestry
 Distance to biofuel plant (km),d_biofuel,Area.4,forestry
@@ -274,6 +305,7 @@ Replanting regime,NA,Area.4,forestry
 Years after felling when replanting occurs,t_replant,Area.4,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.4,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.4,forestry
+Peatland restoration,NA,Area.4,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.4,forestry
 Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.4,forestry
 Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.4,forestry
@@ -281,6 +313,12 @@ Shape parameter for restoration of microbial community function,n_restore_microb
 Shape parameter for restoration of plant community function,n_restore_plants,Area.4,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.4,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.4,forestry
+Management interventions,NA,Area.4,forestry
+Gully/grip (drain) blocking,dam,Area.4,forestry
+Surface/shallow bunding,bund,Area.4,forestry
+Direct re-vegetation of bog plants (imported turf),turf_import,Area.4,forestry
+Direct re-vegetation of bog plants (local turf),turf_local,Area.4,forestry
+Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.4,forestry
 AREA 5,NA,Area.5,forestry
 Number of turbines in this area,n_turb,Area.5,forestry
 Power curve - NOT USED!,NA,Area.5,forestry
@@ -297,10 +335,11 @@ Average tree height (m),h_tree,Area.5,forestry
 Stand age (yr),t_stand,Area.5,forestry
 Is forestry being rotated?,rotation,Area.5,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.5,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)",NA,Area.5,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.5,forestry
 Distance to paper mill (km),d_wpF,Area.5,forestry
 Distance to wood panel mill (km),d_wpM,Area.5,forestry
 Distance to saw mill (km),d_wpS,Area.5,forestry
+Timber left in situ mulched?,mulch,Area.5,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.5,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.5,forestry
 Distance to biofuel plant (km),d_biofuel,Area.5,forestry
@@ -315,6 +354,7 @@ Replanting regime,NA,Area.5,forestry
 Years after felling when replanting occurs,t_replant,Area.5,forestry
 Age of seedlings on planting (yr),t_seedling_replant,Area.5,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.5,forestry
+Peatland restoration,NA,Area.5,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.5,forestry
 Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.5,forestry
 Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.5,forestry
@@ -322,6 +362,12 @@ Shape parameter for restoration of microbial community function,n_restore_microb
 Shape parameter for restoration of plant community function,n_restore_plants,Area.5,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.5,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.5,forestry
+Management interventions,NA,Area.5,forestry
+Gully/grip (drain) blocking,dam,Area.5,forestry
+Surface/shallow bunding,bund,Area.5,forestry
+Direct re-vegetation of bog plants (imported turf),turf_import,Area.5,forestry
+Direct re-vegetation of bog plants (local turf),turf_local,Area.5,forestry
+Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.5,forestry
 AREA 1,NA,Area.1,construct
 Number of turbines in this area - Error! Total in areas > total on site!,n_turb,Area.1,construct
 Number of turbines in this area,n_turb,Area.1,construct

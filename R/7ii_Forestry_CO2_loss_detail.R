@@ -308,10 +308,35 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv")
   Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow")
 
-  E_harv <- rep(list(forestry.dat$Emissions$E_harv), length = length(grep("Area", names(forestry.dat))))
+  ## Emissions factors
+  E_transport <- rep(list(forestry.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 km-1 to t CO2 km-3
+  names(E_transport) <- names(YC)
+
+  E_harv <- rep(list(forestry.dat$Emissions$E_harv / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
   names(E_harv) <- names(YC)
 
+  # THIS IS A PLACEHOLDER WHILE I FIGURE OUT THE CONVERSION OF LITRE FUEL CONSUMED TO gCO2 EMITTED PLUS HOW TO HANDLE THE POWER RATE OF THE MULCHER
+  E_mulch <- rep(list(forestry.dat$Emissions$E_mulch / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
+  names(E_mulch) <- names(YC)
+
+  E_dam <- rep(list(forestry.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  names(E_dam) <- names(YC)
+
+  E_bund <- rep(list(forestry.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  names(E_bund) <- names(YC)
+
+  E_turf_import <- rep(list(forestry.dat$Emissions$E_turf_import / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  names(E_turf_import) <- names(YC)
+
+  E_turf_local <- rep(list(forestry.dat$Emissions$E_turf_local / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  names(E_turf_local) <- names(YC)
+
+  E_fert <- rep(list(forestry.dat$Emissions$E_fert / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  names(E_fert) <- names(YC)
+
+  # Biofuel handling
   p_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "p_biofuel")
   p_biofuel <- lapply(p_biofuel, FUN = function(x) {
     if (is.null(x)) {
@@ -328,6 +353,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   E_fossil_mix <- rep(list(core.dat$Counterfactual$E_fossil_mix), length = length(grep("Area", names(forestry.dat))))
   names(E_fossil_mix) <- names(r_CBiomass)
 
+  # Wood product handling
   d_wpF <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpF")
   d_wpM <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpM")
   d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
@@ -358,6 +384,14 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(d_wp) <- names(r_CBiomass)
 
+  # Management strategy
+  mulch <- map(forestry.dat[grep("Area", names(forestry.dat))], "mulch")
+  dam <- map(forestry.dat[grep("Area", names(forestry.dat))], "dam")
+  bund <- map(forestry.dat[grep("Area", names(forestry.dat))], "bund")
+  turf_import <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_import")
+  turf_local <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_local")
+  fert <- map(forestry.dat[grep("Area", names(forestry.dat))], "fert")
+
   # Get exponential decay rates for wood products
   alpha_dat <- read_xlsx("Templates/alpha_wp.xlsx",
                          sheet = "Sheet1",
@@ -382,9 +416,9 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   species <- c("Scots_pine", "Sitka_spruce")
 
-  # Compute harvesting emissions
-  L_harv <- lapply(seq_along(E_harv), FUN = function(x) {
-    L_harv_a <- lapply(seq_along(E_harv[[x]]), FUN = function(y) {
+  # Get above ground volume for harvesting/mulching emissions
+  V_harv <- lapply(seq_along(A_harv), FUN = function(x) {
+    V_harv_a <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
       Spp_a <- species[Spp[[x]][1]]
       YC_a <- YC[[x]][y]
       t_harv_a <- t_harv[[x]][y]
@@ -408,7 +442,23 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
                Age == t_harv_a) %>%
         select(V_a)
 
-      L_harv_a <- V_a * A_harv[[x]][[y]] * E_harv[[x]][[y]]
+      V_harv_a <- V_a * A_harv[[x]][[y]]
+
+      return(V_harv_a)
+    })
+
+    V_harv_a <- unlist(V_harv_a)
+    names(V_harv_a) <- names(A_harv[[x]])
+    return(V_harv_a)
+  })
+
+  names(V_harv) <- names(A_harv)
+
+  # Compute harvesting emissions
+  L_harv <- lapply(seq_along(E_harv), FUN = function(x) {
+    L_harv_a <- lapply(seq_along(E_harv[[x]]), FUN = function(y) {
+
+      L_harv_a <- V_harv[[x]][y] * E_harv[[x]][y]
 
       L_harv_a <- data.frame(t = 0,
                              L_harv = unname(L_harv_a))
@@ -421,6 +471,134 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(L_harv) <- names(E_harv)
 
+  # Compute mulching emissions
+  L_mulch <- lapply(seq_along(E_mulch), FUN = function(x) {
+    L_mulch_a <- lapply(seq_along(E_mulch[[x]]), FUN = function(y) {
+
+      if (!is.null(mulch[[x]])) {
+        if (mulch[[x]][1]==1) { # mulching selected
+          L_mulch_a <- V_harv[[x]][y] * E_mulch[[x]][y]
+        }
+      } else {
+        L_mulch_a <- 0
+      }
+
+      L_mulch_a <- data.frame(t = 0,
+                              L_mulch = unname(L_mulch_a))
+      return(L_mulch_a)
+    })
+
+    names(L_mulch_a) <- names(E_mulch[[x]])
+    return(L_mulch_a)
+  })
+
+  names(L_mulch) <- names(E_mulch)
+
+  # Compute damming emissions
+  L_dam <- lapply(seq_along(E_dam), FUN = function(x) {
+    L_dam_a <- lapply(seq_along(E_dam[[x]]), FUN = function(y) {
+
+      if (dam[[x]][1]==1) { # damming selected
+        L_dam_a <- A_harv[[x]][y] * E_dam[[x]][y]
+      } else {
+        L_dam_a <- 0
+      }
+
+      L_dam_a <- data.frame(t = t_fallow[[x]][y],
+                            L_dam = unname(L_dam_a))
+      return(L_dam_a)
+    })
+
+    names(L_dam_a) <- names(E_dam[[x]])
+    return(L_dam_a)
+  })
+
+  names(L_dam) <- names(E_dam)
+
+  # Compute bunding emissions
+  L_bund <- lapply(seq_along(E_bund), FUN = function(x) {
+    L_bund_a <- lapply(seq_along(E_bund[[x]]), FUN = function(y) {
+
+      if (bund[[x]][1]==1) { # bunding selected
+        L_bund_a <- A_harv[[x]][y] * E_bund[[x]][y]
+      } else {
+        L_bund_a <- 0
+      }
+
+      L_bund_a <- data.frame(t = t_fallow[[x]][y],
+                             L_bund = unname(L_bund_a))
+      return(L_bund_a)
+    })
+
+    names(L_bund_a) <- names(E_bund[[x]])
+    return(L_bund_a)
+  })
+
+  names(L_bund) <- names(E_bund)
+
+  # Compute turfing emissions (imported)
+  L_turf_import <- lapply(seq_along(E_turf_import), FUN = function(x) {
+    L_turf_import_a <- lapply(seq_along(E_turf_import[[x]]), FUN = function(y) {
+
+      if (turf_import[[x]][1]==1) { # turfing (imported) selected
+        L_turf_import_a <- A_harv[[x]][y] * E_turf_import[[x]][y]
+      } else {
+        L_turf_import_a <- 0
+      }
+
+      L_turf_import_a <- data.frame(t = t_fallow[[x]][y],
+                                    L_turf_import = unname(L_turf_import_a))
+      return(L_turf_import_a)
+    })
+
+    names(L_turf_import_a) <- names(E_turf_import[[x]])
+    return(L_turf_import_a)
+  })
+
+  names(L_turf_import) <- names(E_turf_import)
+
+  # Compute turfing emissions (local)
+  L_turf_local <- lapply(seq_along(E_turf_local), FUN = function(x) {
+    L_turf_local_a <- lapply(seq_along(E_turf_local[[x]]), FUN = function(y) {
+
+      if (turf_import[[x]][1]==1) { # turfing (locally sourced) selected
+        L_turf_local_a <- A_harv[[x]][y] * E_turf_local[[x]][y]
+      } else {
+        L_turf_local_a <- 0
+      }
+
+      L_turf_local_a <- data.frame(t = t_fallow[[x]][y],
+                                   L_turf_local = unname(L_turf_local_a))
+      return(L_turf_local_a)
+    })
+
+    names(L_turf_local_a) <- names(E_turf_local[[x]])
+    return(L_turf_local_a)
+  })
+
+  names(L_turf_local) <- names(E_turf_local)
+
+  # Compute fertilization emissions
+  L_fert <- lapply(seq_along(E_fert), FUN = function(x) {
+    L_fert_a <- lapply(seq_along(E_fert[[x]]), FUN = function(y) {
+
+      if (turf_import[[x]][1]==1) { # fertilization selected
+        L_fert_a <- A_harv[[x]][y] * E_fert[[x]][y]
+      } else {
+        L_fert_a <- 0
+      }
+
+      L_fert_a <- data.frame(t = t_fallow[[x]][y],
+                             L_fert = unname(L_fert_a))
+      return(L_fert_a)
+    })
+
+    names(L_fert_a) <- names(E_fert[[x]])
+    return(L_fert_a)
+  })
+
+  names(L_fert) <- names(E_fert)
+
   # Extract carbon content of the forestry at harvesting
   C_forest <- lapply(seq_along(S_forest), FUN = function(x) {
     res <- lapply(seq_along(S_forest[[x]]), FUN = function(y) {
@@ -429,7 +607,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
         summarise(C = sum(NPP))
     })
     res <- unlist(res)
-    names(res) <- names(out[[x]])
+    names(res) <- names(S_forest[[x]])
     return(res)
   })
 
@@ -537,8 +715,8 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
       res <- res %>%
         mutate(L_wpF = replace_na(lag(S_wpF, n = 1) - S_wpF, 0),
                L_wpM = replace_na(lag(S_wpM, n = 1) - S_wpM, 0),
-               L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0)) %>%
-        select(t, L_wpF, L_wpM, L_wpS)
+               L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0)) #%>%
+        # select(t, L_wpF, L_wpM, L_wpS)
 
       if (0) {
         plot(L_wpF ~ t, res, type='l')
@@ -555,15 +733,41 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(CO2_wp_decay) <- names(CO2_wp)
 
   if (0) {
-    plot(L_wpF ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
-    plot(L_wpM ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
-    plot(L_wpS ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
+
+    tt <- (0:100)
+    t0.5 <- 2
+    l <- t0.5 / log(2)
+
+    cc <- CO2_wp[[1]][[1]][1] * exp(-tt/alpha[[1]]["wpF"])
+
+    par(mfrow=c(1,2))
+    plot(tt,cc,type='l')
+    abline(h=CO2_wp[[1]][[1]]["wpF"])
+    abline(h=0.5*CO2_wp[[1]][[1]]["wpF"])
+    abline(v=2)
+
+    par(mfrow=c(1,3))
+    plot(S_wpF ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
+    abline(h=CO2_wp[[1]][[1]]["wpF"])
+    abline(h=0.5*CO2_wp[[1]][[1]]["wpF"])
+    abline(v=2)
+
+    plot(S_wpM ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
+    abline(h=CO2_wp[[1]][[1]]["wpM"])
+    abline(h=0.5*CO2_wp[[1]][[1]]["wpM"])
+    abline(v=25)
+
+    plot(S_wpS ~ t, CO2_wp_decay$Area.1$Exp, type='l', xlim=c(0,50))
+    abline(h=CO2_wp[[1]][[1]]["wpS"])
+    abline(h=0.5*CO2_wp[[1]][[1]]["wpS"])
+    abline(v=35)
+
   }
 
   ## Esimate transportion emissions B*D*E
   L_T_wp <- lapply(seq_along(B_wp), FUN = function (x) {
     L_T_wp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
-      L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * forestry.dat$Emissions$E_transport[y] / 1e6 # unit conversion g CO2 to t CO2
+      L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * E_transport[[x]][y]
       L_T <- data.frame(t = 0,
                         L_T_wpF = unname(L_T["wpF"]),
                         L_T_wpM = unname(L_T["wpM"]),
@@ -612,7 +816,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   L_T_biofuel <- list_op(l1 = B_biofuel,
                          l2 = d_biofuel,
-                         l3 = rep(list(forestry.dat$Emissions$E_transport), length = length(grep("Area", names(forestry.dat)))),
+                         l3 = E_transport,
                          func = "*")
 
   L_T_biofuel <- lapply(L_T_biofuel, FUN = as.list)
@@ -635,10 +839,13 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(L_forest) <- grep("Area", names(forestry.dat), value=T)
   for (i in 1:length(L_forest)) {
     L_forest[[i]]$L_harv <- L_harv[[i]]
-    L_forest[[i]]$L_mulch <- NULL
+    L_forest[[i]]$L_mulch <- L_mulch[[i]]
     L_forest[[i]]$L_terraform <- NULL
-    L_forest[[i]]$L_bund <- NULL
-    L_forest[[i]]$L_veg_rest <- NULL
+    L_forest[[i]]$L_dam <- L_dam[[i]]
+    L_forest[[i]]$L_bund <- L_bund[[i]]
+    L_forest[[i]]$L_turf_import <- L_turf_import[[i]]
+    L_forest[[i]]$L_turf_local <- L_turf_local[[i]]
+    L_forest[[i]]$L_fert <- L_fert[[i]]
     L_forest[[i]]$L_wp <- CO2_wp_decay[[i]]
     L_forest[[i]]$L_T_wp <- L_T_wp[[i]]
     L_forest[[i]]$S_biofuel <- S_biofuel[[i]]

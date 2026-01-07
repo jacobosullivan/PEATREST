@@ -73,7 +73,7 @@ getCoreInputData <- function(path, df_struct) {
 getForestryInputData <- function(path, df_struct) {
   df <- read_excel(path,
                    sheet = "Forestry input data",
-                   range = "C12:H119",
+                   range = "C12:H260",
                    col_names = c("Input.data", "Exp", "rem1", "Min", "rem2", "Max"))
 
   suppressWarnings(
@@ -109,7 +109,7 @@ getForestryInputData <- function(path, df_struct) {
     mutate(Input.data=str_remove(Input.data, "\\.\\..*")) %>%
     filter(!(is.na(Exp) & is.na(Min) & is.na(Max))) %>% # if all inputs are NA, remove
     group_by(Subset.name) %>%
-    mutate(Subset.name=ifelse(n() <= 5 & length(grep("Area", Subset.name))>0, NA, Subset.name)) %>% # remove 'singletons': these are empty areas with non NA pow_curve/soil_type/rotation due to drop down menu
+    mutate(Subset.name=ifelse(n() <= 10 & length(grep("Area", Subset.name))>0, NA, Subset.name)) %>% # remove 'singletons': these are empty areas with non NA pow_curve/soil_type/rotation/restoration_interventions due to drop down menu
     ungroup() %>%
     filter(!is.na(Subset.name)) %>%
     filter(!is.na(Variable.name))

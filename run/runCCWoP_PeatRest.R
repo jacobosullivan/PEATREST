@@ -87,17 +87,17 @@ if (0) {
     return(res)
   }))
 
-  ggplot(S_forest_df, aes(x=t, y=NPP_pa, linetype=factor(Area))) +
+  ggplot(S_forest_df, aes(x=t, y=NPP_pa)) +
     geom_line(col="green3") +
     scale_x_continuous(limits = c(min(S_forest_df$t), 200)) +
-    facet_grid(Est ~ ., scales="free_y") +
+    facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2 ha-1]", col="n", linetype="")
 
-  ggplot(S_forest_df, aes(x=t, y=NPP, linetype=factor(Area))) +
+  ggplot(S_forest_df, aes(x=t, y=NPP)) +
     geom_line(col="green3") +
     scale_x_continuous(limits = c(min(S_forest_df$t), 200)) +
-    facet_grid(Est ~ ., scales="free_y") +
+    facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2]", col="n", linetype="")
 }
@@ -133,22 +133,36 @@ if (0) {
   L_forest_df$sink <- -1
   L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
   L_forest_df$discrete <- 0
-  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "S_biofuel")] <- 1
+  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_turf_import", "L_turf_local", "L_fert", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "S_biofuel")] <- 1
   L_forest_df <- L_forest_df %>%
     mutate(value = ifelse(value==0, NA, value))
 
   unique(L_forest_df$source)
 
+  # L_forest_df %>%
+  #   filter(source=="L_wpS", Area=="Area.1", t %in% c(1,36))
+
+  L_forest_df %>%
+    filter(Area=="Area.2", discrete==1) %>%
+    print(n=Inf)
+
+
   ## I don't know if this is working as I don't yet have correct values for wood product biomass allocation
-  sources_cont <- c() #c("L_harv", "L_T_biofuel", "S_biofuel")
-  sources_disc <- c("L_harv", "L_T_biofuel", "S_biofuel")
-  ggplot(L_forest_df, aes(x=t, y=value*sink)) +
-    geom_point(data = L_forest_df %>% filter(source %in% sources_disc), aes(shape=factor(source)), col="red3") +
-    geom_line(data = L_forest_df %>% filter(source %in% sources_cont), aes(linetype=factor(source)), col="red3") +
-    scale_x_continuous(limits = c(0, 200)) +
+  sources_cont <- c("L_wpF", "L_wpM", "L_wpS")
+  sources_disc <- c("L_harv", "L_mulch", "L_dam", "L_bund", "L_turf_import", "L_turf_local", "L_fert", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "S_biofuel")
+  ggplot(L_forest_df %>% filter(source %in% sources_cont), aes(x=t, y=value*sink, linetype=factor(source))) +
+    geom_line(col="red3") +
+    scale_x_continuous(limits = c(0, 50)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Wood product emissions [tCO2 ha-1]", linetype="", shape="")
+    labs(x="Time since harvesting [y]", y="Wood product decay emissions [tCO2]", linetype="")
+
+  ggplot(L_forest_df %>% filter(source %in% sources_disc), aes(x=t, y=value*sink, col=factor(source))) +
+    geom_point() +
+    scale_x_continuous(limits = c(0, 30)) +
+    facet_grid(Est ~ Area, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Discrete harvesting/management emissions [tCO2]", col="")
 }
 
 ################################################################################
@@ -240,8 +254,8 @@ if (0) {
 
   L_microbes_df <- rbind(L_CO2_microbes_df,
                          L_CH4_microbes_df)
-
   L_microbes_df$C <- factor(L_microbes_df$C, levels = c("CO2", "CH4"))
+
   ggplot(L_microbes_df, aes(x=t, y=L, col=factor(n), linetype=factor(C))) +
     geom_line() +
     scale_x_continuous(limits = c(0, 50)) +
