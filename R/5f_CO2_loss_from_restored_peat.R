@@ -14,6 +14,10 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
   conv_val <- 0.99 # convergence value required by arbitrary convergent function
 
+  AVG_WTD <- T # if TRUE remove partitioning into flooded and unflooded days and assume that annual average WTD can be used
+  # Averages will work so long as R_CX ~ WTD is approximately linear. This is true for CO2 in the range WTD = [0,1m] but NOT for CH4
+  # Thus, average WTD will systematically under estimate methane emissions
+
   # Extract input variables for easy access
   peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
   A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
@@ -22,41 +26,78 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_microbes") # shape parameter for restoration of microbial function
 
   ## Compute emissions rates from deforested, unrestored peatland
-  D_f <- 0 # Assume flooded days per year D_f = 0 for drained, unrestored peats
-  pD_f <- D_f / 365
 
-  CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
-    res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
-    return(res)
-  })
-  names(CO2_dry) <- names(A_harv)
+  if (!AVG_WTD) { # partition into flooded and unflooded days. 2 values of WTD needed in principle
 
-  CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
-    res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
-    return(res)
-  })
-  names(CH4_dry) <- names(A_harv)
+    D_f <- 0 # Assume flooded days per year D_f = 0 for drained, unrestored peats
+    pD_f <- D_f / 365
+
+    CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CO2_dry) <- names(A_harv)
+
+    CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CH4_dry) <- names(A_harv)
+
+  } else { # take the annual average water table depth (robust in linear region of emissions function)
+
+    CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CO2_dry
+      return(res)
+    })
+    names(CO2_dry) <- names(A_harv)
+
+    CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CH4_dry
+      return(res)
+    })
+    names(CH4_dry) <- names(A_harv)
+
+  }
 
   ## Compute emissions rates from deforested, restored peatland
 
-  if (peat_type[1] == 1) { # Acid bog selected
-    D_f <- 178
-  } else {
-    D_f <- 169
+  if (!AVG_WTD) { # partition into flooded and unflooded days. 2 values of WTD needed in principle
+
+    if (peat_type[1] == 1) { # Acid bog selected
+      D_f <- 178
+    } else {
+      D_f <- 169
+    }
+    pD_f <- D_f / 365
+
+    CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CO2_wet) <- names(A_harv)
+
+    CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CH4_wet) <- names(A_harv)
+
+  } else { # take the annual average water table depth (robust in linear region of emissions function)
+
+    CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CO2_wet
+      return(res)
+    })
+    names(CO2_wet) <- names(A_harv)
+
+    CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CH4_wet
+      return(res)
+    })
+    names(CH4_wet) <- names(A_harv)
+
   }
-  pD_f <- D_f / 365
-
-  CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
-    res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
-    return(res)
-  })
-  names(CO2_wet) <- names(A_harv)
-
-  CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
-    res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
-    return(res)
-  })
-  names(CH4_wet) <- names(A_harv)
 
   ## Interpolate emissions across restoration phase (arbitrary asymptotic function)
   L_CO2_microbes <- lapply(seq_along(A_harv), FUN = function(x) {
@@ -119,17 +160,41 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
     return(res)
   })
 
+  # Update data structure to timeseries/dataframes
+  L_CO2_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function (x) {
+    L_CO2_microbes_a <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CO2_microbes[[x]][[y]])-1),
+                      L_CO2 = L_CO2_microbes[[x]][[y]])
+      return(L)
+    })
+    names(L_CO2_microbes_a) <- names(L_CO2_microbes[[x]])
+    return(L_CO2_microbes_a)
+  })
+
+  L_CH4_microbes <- lapply(seq_along(L_CH4_microbes), FUN = function (x) {
+    L_CH4_microbes_a <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CH4_microbes[[x]][[y]])-1),
+                      L_CH4 = L_CH4_microbes[[x]][[y]])
+      return(L)
+    })
+    names(L_CH4_microbes_a) <- names(L_CH4_microbes[[x]])
+    return(L_CH4_microbes_a)
+  })
+
   names(L_CO2_microbes) <- names(A_harv)
   names(L_CH4_microbes) <- names(A_harv)
 
-  return(L_microbes = list(CO2 = L_CO2_microbes,
-                           CH4 = L_CH4_microbes))
+  L_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function (x) {
+    L_microbes_a <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
+      L <- L_CO2_microbes[[x]][[y]]
+      L$L_CH4 <- L_CH4_microbes[[x]][[y]]$L_CH4
+      return(L)
+    })
+    names(L_microbes_a) <- names(L_CO2_microbes[[x]])
+    return(L_microbes_a)
+  })
 
-  # L_peat_rest_phase <- list(Tot = list_op(l1 = L_CO2_rest_phase,
-  #                                         l2 = L_CH4_rest_phase,
-  #                                         func = "+"),
-  #                           CO2 = L_CO2_rest_phase,
-  #                           CH4 = L_CH4_rest_phase)
+  names(L_microbes) <- names(A_harv)
 
-  # return(L_peat_rest_phase)
+  return(L_microbes)
 }

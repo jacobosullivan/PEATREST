@@ -138,12 +138,10 @@ C_sequest_in_trees <- function(core.dat,
 }
 
 #' C_sequest_in_trees_RM
-#' @param core.dat UI data
 #' @param forestry.dat UI forestry data
 #' @return 3PG output
 #' @export
-C_sequest_in_trees_RM <- function(core.dat,
-                                  forestry.dat) {
+C_sequest_in_trees_RM <- function(forestry.dat) {
 
   # THIS FUNCTION...
 

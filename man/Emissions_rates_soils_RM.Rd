@@ -4,12 +4,12 @@
 \alias{Emissions_rates_soils_RM}
 \title{Emissions_rates_soils}
 \usage{
-Emissions_rates_soils_RM(core.dat, construct.dat)
+Emissions_rates_soils_RM(core.dat, forestry.dat)
 }
 \arguments{
 \item{core.dat}{UI data}
 
-\item{construct.dat}{UI construction data}
+\item{forestry.dat}{UI forestry data}
 }
 \value{
 Emissions rates from drained and undrained peatland

@@ -1,4 +1,5 @@
 ## 7ii. Forestry CO2 loss - detail
+
 #' Forestry_CO2_loss_detail
 #' @param core.dat UI data
 #' @param forestry.dat UI forestry data
@@ -292,7 +293,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
 #' @param core.dat UI data
 #' @param forestry.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
-#' @param C_wpry carbon content of the removed forestry estimated by 3PG
+#' @param S_forest 3PG output
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
 Forestry_CO2_loss_detail_RM <- function(core.dat,
@@ -715,8 +716,8 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
       res <- res %>%
         mutate(L_wpF = replace_na(lag(S_wpF, n = 1) - S_wpF, 0),
                L_wpM = replace_na(lag(S_wpM, n = 1) - S_wpM, 0),
-               L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0)) #%>%
-        # select(t, L_wpF, L_wpM, L_wpS)
+               L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0)) %>%
+        select(t, L_wpF, L_wpM, L_wpS)
 
       if (0) {
         plot(L_wpF ~ t, res, type='l')
@@ -838,6 +839,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   L_forest <- vector(mode = "list", length=length(grep("Area", names(forestry.dat))))
   names(L_forest) <- grep("Area", names(forestry.dat), value=T)
   for (i in 1:length(L_forest)) {
+
     L_forest[[i]]$L_harv <- L_harv[[i]]
     L_forest[[i]]$L_mulch <- L_mulch[[i]]
     L_forest[[i]]$L_terraform <- NULL
@@ -853,4 +855,87 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   }
 
   return(L_forest)
+}
+
+#' getYC
+#' @param forestry.dat UI forestry data
+#' @param growthYield.dat Growth and yield table
+#' @return Yield class estimated from UI average height/age
+#' @export
+getYC <- function(forestry.dat,
+                  growthYield.dat) {
+
+  # THIS FUNCTION...
+  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC")
+  h_tree <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "h_tree")
+  t_stand <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_stand")
+  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+  species <- c("Scots_pine", "Sitka_spruce")
+
+  point_to_segment_distance <- function(P, A, B) {
+    # Helper function: compute distance from point P (A,H) to line segments joining points in GY curve
+    AP <- P - A
+    AB <- B - A
+
+    t <- sum(AP * AB) / sum(AB * AB)
+    t <- max(0, min(1, t))   # clamp to [0, 1]
+
+    closest <- A + t * AB
+    return(sqrt(sum((P - closest)^2)))
+  }
+
+  point_to_curve_distance <- function(P, curve) {
+    # Helper function: compute distance from point P (A,H) to GY curve
+    n <- nrow(curve)
+
+    distances <- numeric(n - 1)
+    for (i in 1:(n - 1)) {
+      A <- curve[i, ]
+      B <- curve[i + 1, ]
+      distances[i] <- point_to_segment_distance(P, A, B)
+    }
+
+    return(min(distances))
+  }
+
+  YC <- lapply(seq_along(YC), FUN = function(x) {
+    if (is.null(YC[[x]])) { # estimate YC from avg. height/age inputs
+      Spp_a <- species[Spp[[x]][1]]
+      YC_avail_a <- unique((growthYield.dat %>%
+        filter(Spp == Spp_a))$YC)
+
+      YC_a <- sapply(seq_along(h_tree[[x]]), FUN = function(y) {
+        res <- sapply(seq_along(YC_avail_a), FUN = function(z) {
+          curve <- growthYield.dat %>%
+            filter(Spp == Spp_a, YC == YC_avail_a[z]) %>%
+            select(Age, H) %>%
+            as.matrix()
+          d_YC <- point_to_curve_distance(P = c(t_stand[[x]][y], h_tree[[x]][y]),
+                                          curve = curve)
+        })
+
+        YC_a_est <- YC_avail_a[which.min(res)]
+        return(YC_a_est)
+      })
+
+      names(YC_a) <- c("Exp", "Min", "Max")
+
+      if (0) {
+        ggplot(growthYield.dat %>% filter(Spp==Spp_a),
+               aes(x=Age, y=H, col=factor(YC))) +
+          geom_line() +
+          geom_point(data = data.frame(Age = t_stand[[x]],
+                                       H = h_tree[[x]],
+                                       YC = YC_a))
+      }
+
+      return(YC_a)
+    } else {
+      return(YC[[x]])
+    }
+  })
+
+  names(YC) <- names(Spp)
+
+  return(YC)
 }

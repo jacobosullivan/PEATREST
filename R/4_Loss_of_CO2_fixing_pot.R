@@ -36,8 +36,7 @@ Bog_plant_sequestration_RM <- function(core.dat,
                                        forestry.dat) {
 
   # THIS FUNCTION...
-
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  # CO2_C <- 3.667 # Molecular weight ratio C to CO2
   conv_val <- 0.99
 
   # Extract input variables for easy access
@@ -45,7 +44,6 @@ Bog_plant_sequestration_RM <- function(core.dat,
   ## For now assume fixed rate per unit area sequestration and assume not dependent on area as likely estimated by space for time substitution
   G_bog <- core.dat$Bog.plants$G_bog
 
-  ## If using ECOSSE or SCOTIA this will be a function of environmental inputs (MAKE A DUMMY VERSION OF THIS)
   t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_plants")
   t_restore <- lapply(t_restore, FUN = function(x) { # Reorder Min Max
     x <- x[c(1,3,2)]
@@ -62,7 +60,7 @@ Bog_plant_sequestration_RM <- function(core.dat,
       rest_dyn_mod(t = 1:t_restore[[x]][y],
                    n = n_restore[[x]][y],
                    ymin = 0, # assume no bog plant sequestration prior to restoration intervention
-                   ymax = CO2_C * A_harv[[x]][y] * G_bog[y], # convert into units CO2
+                   ymax = A_harv[[x]][y] * G_bog[y], # DONT convert into units CO2, done later to match 3PG output
                    convThresh = conv_val)
     })
     names(res) <- names(A_harv[[x]])
@@ -82,10 +80,23 @@ Bog_plant_sequestration_RM <- function(core.dat,
   S_bog_plants <- lapply(seq(S_bog_plants), FUN = function(x) {
     res <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
       ext <- 501 - length(unlist(S_bog_plants[[x]][y]))
-      return(unname(c(unlist(S_bog_plants[[x]][y]), rep(CO2_C * A_harv[[x]][y] * G_bog[y], ext))))
+      return(unname(c(unlist(S_bog_plants[[x]][y]), rep(A_harv[[x]][y] * G_bog[y], ext))))
     })
     names(res) <- names(S_bog_plants[[x]])
     return(res)
+  })
+
+  names(S_bog_plants) <- names(A_harv)
+
+  # Update data structure to timeseries/dataframes
+  S_bog_plants <- lapply(seq_along(S_bog_plants), FUN = function (x) {
+    S_bog_plants_a <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
+      S <- data.frame(t = 0:(length(S_bog_plants[[x]][[y]])-1),
+                      S_bog_plants = S_bog_plants[[x]][[y]])
+      return(S)
+    })
+    names(S_bog_plants_a) <- names(S_bog_plants[[x]])
+    return(S_bog_plants_a)
   })
 
   names(S_bog_plants) <- names(A_harv)

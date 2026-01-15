@@ -132,6 +132,7 @@ Power curve,pow_curve,Area.1,forestry
 Slope (a),slope_pow_curve,Area.1,forestry
 Intercept (b),int_pow_curve,Area.1,forestry
 Major soil sub-group,soil_type,Area.1,forestry
+Peat depth (m),d_peat,Area.1,forestry
 Species,species,Area.1,forestry
 Input used to parameterise 3PG module,NA,Area.1,forestry
 Yield class,YC,Area.1,forestry
@@ -181,6 +182,7 @@ Power curve,pow_curve,Area.2,forestry
 Slope (a),slope_pow_curve,Area.2,forestry
 Intercept (b),int_pow_curve,Area.2,forestry
 Major soil sub-group,soil_type,Area.2,forestry
+Peat depth (m),d_peat,Area.2,forestry
 Species,species,Area.2,forestry
 Input used to parameterise 3PG module,NA,Area.2,forestry
 Yield class,YC,Area.2,forestry
@@ -230,6 +232,7 @@ Power curve,pow_curve,Area.3,forestry
 Slope (a),slope_pow_curve,Area.3,forestry
 Intercept (b),int_pow_curve,Area.3,forestry
 Major soil sub-group,soil_type,Area.3,forestry
+Peat depth (m),d_peat,Area.3,forestry
 Species,species,Area.3,forestry
 Input used to parameterise 3PG module,NA,Area.3,forestry
 Yield class,YC,Area.3,forestry
@@ -279,6 +282,7 @@ Power curve,pow_curve,Area.4,forestry
 Slope (a),slope_pow_curve,Area.4,forestry
 Intercept (b),int_pow_curve,Area.4,forestry
 Major soil sub-group,soil_type,Area.4,forestry
+Peat depth (m),d_peat,Area.4,forestry
 Species,species,Area.4,forestry
 Input used to parameterise 3PG module,NA,Area.4,forestry
 Yield class,YC,Area.4,forestry
@@ -328,6 +332,7 @@ Power curve,pow_curve,Area.5,forestry
 Slope (a),slope_pow_curve,Area.5,forestry
 Intercept (b),int_pow_curve,Area.5,forestry
 Major soil sub-group,soil_type,Area.5,forestry
+Peat depth (m),d_peat,Area.5,forestry
 Species,species,Area.5,forestry
 Input used to parameterise 3PG module,NA,Area.5,forestry
 Yield class,YC,Area.5,forestry

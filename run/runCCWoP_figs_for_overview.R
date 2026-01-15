@@ -338,3 +338,62 @@ png("../Figures/Carbon_payback_time.png", width=ww, height=hh, units="cm", res=3
 p9
 dev.off()
 
+## Emissions rates
+
+if (0) {
+
+  d_wt <- seq(0, 1, length.out=101)
+  TT <- seq(0, 10, length.out=5)
+  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
+  R_df <- c()
+
+  for (i in 1:length(d_wt)) {
+    for (j in 1:length(TT)) {
+      R_df <- rbind(R_df,
+                    data.frame(d_wt = d_wt[i],
+                               TT = TT[j],
+                               source = "CO2",
+                               R = unlist(METAR_CO2_F(CO2_C,
+                                                      d_wt[i],
+                                                      TT[j])),
+                               peat_type = "F"),
+                    data.frame(d_wt = d_wt[i],
+                               TT = TT[j],
+                               source = "CO2",
+                               R = unlist(METAR_CO2_AB(CO2_C,
+                                                       d_wt[i],
+                                                       TT[j])),
+                               peat_type = "AB"),
+                    data.frame(d_wt = d_wt[i],
+                               TT = TT[j],
+                               source = "CH4",
+                               R = unlist(METAR_CH4_F(CO2_C,
+                                                      d_wt[i],
+                                                      TT[j])),
+                               peat_type = "F"),
+                    data.frame(d_wt = d_wt[i],
+                               TT = TT[j],
+                               source = "CH4",
+                               R = unlist(METAR_CH4_AB(CO2_C,
+                                                       d_wt[i],
+                                                       TT[j])),
+                               peat_type = "AB"))
+    }
+  }
+
+  p0 <- ggplot(R_df %>%
+                 mutate(source = factor(source, levels = c("CO2", "CH4"))) %>%
+                 filter(d_wt <= 0.5),
+               aes(x=d_wt, y=R, col=TT, group_by=factor(TT), linetype=factor(source))) +
+    geom_line() +
+    facet_wrap(~ peat_type, scales="free_y") +
+    theme_bw() +
+    labs(x="Water table depth [m]", y="Emissions rate [t CO2 eq. ha-1 yr-1]", linetype="", col="T [C]")
+
+  ww <- 18
+  hh <- 8
+  png("../Figures/meta_analytic_emissions_rates.png", width=ww, height=hh, units="cm", res=300)
+  p0
+  dev.off()
+}

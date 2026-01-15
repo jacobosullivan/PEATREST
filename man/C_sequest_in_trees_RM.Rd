@@ -4,11 +4,9 @@
 \alias{C_sequest_in_trees_RM}
 \title{C_sequest_in_trees_RM}
 \usage{
-C_sequest_in_trees_RM(core.dat, forestry.dat)
+C_sequest_in_trees_RM(forestry.dat)
 }
 \arguments{
-\item{core.dat}{UI data}
-
 \item{forestry.dat}{UI forestry data}
 }
 \value{

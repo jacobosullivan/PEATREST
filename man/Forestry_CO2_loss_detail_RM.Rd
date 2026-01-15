@@ -13,7 +13,7 @@ Forestry_CO2_loss_detail_RM(core.dat, forestry.dat, growthYield.dat, S_forest)
 
 \item{growthYield.dat}{growth and yield data (estimated from CARBINE runs)}
 
-\item{C_wpry}{carbon content of the removed forestry estimated by 3PG}
+\item{S_forest}{3PG output}
 }
 \value{
 Estimated lifetime loss of carbon stored in forestry products
