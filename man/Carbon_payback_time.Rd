@@ -14,12 +14,20 @@ Carbon_payback_time(
 )
 }
 \arguments{
-\item{energy_output}{output of Windfarm_output}
+\item{S_forest}{Forest sequestration}
 
-\item{E_mat}{counterfactuals in matrix form with IDs as rownames}
+\item{R_tot_forestry}{Emissions from soils under forestry}
+
+\item{S_bog_plants}{bog plant sequestration}
+
+\item{L_forest}{Forest product losses}
+
+\item{L_microbes}{Emissions from peatland}
+
+\item{L_DPOC}{D/POC losses}
 }
 \value{
-Total Windfarm CO2 emissions savings
+Total peatland restoration carbon accounting
 }
 \description{
 Carbon_payback_time

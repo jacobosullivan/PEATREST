@@ -205,17 +205,17 @@ plotL_DPOC <- function(L_DPOC) {
 }
 
 #' plotR_tot_forestry
-#' @param R_tot_forestry Emissions rates from soil under trees
+#' @param plotL_forest_soils Emissions rates from soil under trees
 #' @return plot
 #' @export
-plotR_tot_forestry <- function(R_tot_forestry) {
+plotL_forest_soils <- function(L_forest_soils) {
 
   coeff <- 10
 
-  R_tot_forestry_df <- bind_rows(lapply(R_tot_forestry, FUN = bind_rows)) %>%
-    mutate(source = factor(source, levels=c("R_tot", "R_CO2", "R_CH4")))
+  L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
+    mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))
 
-  # ggplot(R_tot_forestry_df %>% filter(Est == "Exp", Area == "Area.1"), aes(x=t + 50)) +
+  # ggplot(L_forest_soils_df %>% filter(Est == "Exp", Area == "Area.1"), aes(x=t + 50)) +
   #   geom_line(aes(y=value, col=source)) +
   #   geom_line(aes(y=d_wt*coeff), col="grey") +
   #   scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
@@ -227,7 +227,7 @@ plotR_tot_forestry <- function(R_tot_forestry) {
   #   theme(axis.title.y.right = element_text(color = "grey")) +
   #   labs(x = "Time (yr)", col="")
 
-  p <- ggplot(R_tot_forestry_df, aes(x=t)) +
+  p <- ggplot(L_forest_soils_df, aes(x=t)) +
     geom_line(aes(y=value, col=source)) +
     geom_line(aes(y=d_wt*coeff), col="grey") +
     scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
@@ -237,7 +237,7 @@ plotR_tot_forestry <- function(R_tot_forestry) {
     facet_grid(Est ~ Area) +#, scales="free_y") +
     theme_bw() +
     theme(axis.title.y.right = element_text(color = "grey")) +
-    labs(x = "Time (yr)", col="")
+    labs(x = "Time (yr)", col="", title="Emissions from soils under trees")
   return(p)
 }
 

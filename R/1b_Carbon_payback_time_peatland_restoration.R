@@ -1,9 +1,13 @@
 ## 1b. Carbon payback time peatland restoration
 
 #' Carbon_payback_time
-#' @param energy_output output of Windfarm_output
-#' @param E_mat counterfactuals in matrix form with IDs as rownames
-#' @return Total Windfarm CO2 emissions savings
+#' @param S_forest Forest sequestration
+#' @param R_tot_forestry Emissions from soils under forestry
+#' @param S_bog_plants bog plant sequestration
+#' @param L_forest Forest product losses
+#' @param L_microbes Emissions from peatland
+#' @param L_DPOC D/POC losses
+#' @return Total peatland restoration carbon accounting
 #' @export
 Carbon_payback_time <- function(S_forest,
                                 R_tot_forestry,
@@ -51,16 +55,21 @@ Carbon_payback_time <- function(S_forest,
   L_microbes_df <- getDf2(L_microbes)
   L_DPOC_df <- getDf2(L_DPOC)
   L_forest_df <- getDf3(L_forest)
+  L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
+    filter(source == "L_tot") %>%
+    select(colnames(L_forest_df))
 
-  S_forest_df$treatment <- "counterfactual"
-  S_bog_plants_df$treatment <- "restoration"
-  L_microbes_df$treatment <- "restoration"
-  L_DPOC_df$treatment <- "restoration"
-  L_forest_df$treatment <- "restoration"
+  S_forest_df$treatment <- "CF"
+  L_forest_soils_df$treatment <- "CF"
+  S_bog_plants_df$treatment <- "PR"
+  L_microbes_df$treatment <- "PR"
+  L_DPOC_df$treatment <- "PR"
+  L_forest_df$treatment <- "PR"
 
   ## Merge dataframes
   res <- rbind(S_forest_df,
-               S_bog_plants_df,
+               #S_bog_plants_df, # apparently this is accounted for in the emissions sub-model...
+               L_forest_soils_df,
                L_microbes_df,
                L_DPOC_df,
                L_forest_df)
@@ -68,15 +77,25 @@ Carbon_payback_time <- function(S_forest,
   res <- res %>%
     mutate(value = ifelse(grepl("L_", source), -value, value))
 
+  # res %>%
+  #   arrange(t, treatment) %>%
+  #   head(20)
+
   res_sum <- res %>%
     group_by(treatment, t, Area, Est) %>%
     summarise(value = sum(value))
 
-  ggplot(res_sum, aes(x=t, y=value, col=treatment)) +
+  # res_sum %>%
+  #   arrange(t, treatment) %>%
+  #   head(20)
+
+  p <- ggplot(res_sum, aes(x=t, y=value, col=treatment)) +
     geom_line() +
-    scale_x_continuous(limits = c(min(res_sum$t), 100)) +
+    scale_x_continuous(limits = c(NA, 200)) +
+    geom_hline(yintercept = 0) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="D/POC leaching [tCO2 eq.]", col="n", linetype="")
+    labs(x="Time since harvesting [y]", y="Carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
 
+  return(p)
 }

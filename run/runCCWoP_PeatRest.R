@@ -41,12 +41,12 @@ p_S_forest
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-R_tot_forestry <- Emissions_rates_forestry_soils_RM(core.dat,
+L_forest_soils <- Emissions_rates_forestry_soils_RM(core.dat,
                                                     forestry.dat,
                                                     growthYield.dat)
 
-p_R_tot_forestry <- plotR_tot_forestry(R_tot_forestry[[1]])
-p_R_tot_forestry
+p_L_forest_soils <- plotL_forest_soils(L_forest_soils)
+p_L_forest_soils
 
 ################################################################################
 ############ Harvesting/Restoration emissions and wood product decay ###########
@@ -103,3 +103,59 @@ p_L_DPOC
 ################################################################################
 ######################### CO2 payback time estimation ##########################
 ################################################################################
+
+LCA <- Carbon_payback_time(S_forest,
+                           R_tot_forestry,
+                           S_bog_plants,
+                           L_forest,
+                           L_microbes,
+                           L_DPOC)
+LCA
+
+################################################################################
+################################# Save plots ###################################
+################################################################################
+
+ww <- 16
+hh <- 12
+
+png("../Figures/LCA implementation/S_forest.png",
+    width=ww, height=hh, units="cm", res=300)
+p_S_forest
+dev.off()
+
+png("../Figures/LCA implementation/L_forest_soils.png",
+    width=ww, height=hh, units="cm", res=300)
+p_L_forest_soils
+dev.off()
+
+png("../Figures/LCA implementation/L_forest_cont.png",
+    width=ww, height=hh, units="cm", res=300)
+p_L_forest[[1]]
+dev.off()
+
+png("../Figures/LCA implementation/L_forest_disc.png",
+    width=ww, height=hh, units="cm", res=300)
+p_L_forest[[2]]
+dev.off()
+
+png("../Figures/LCA implementation/S_bog_plants.png",
+    width=ww, height=hh, units="cm", res=300)
+p_S_bog_plants
+dev.off()
+
+png("../Figures/LCA implementation/L_peatland.png",
+    width=ww, height=hh, units="cm", res=300)
+p_L_microbes
+dev.off()
+
+png("../Figures/LCA implementation/L_DPOC.png",
+    width=ww, height=hh, units="cm", res=300)
+p_L_DPOC
+dev.off()
+
+png("../Figures/LCA implementation/LCA.png",
+    width=ww, height=hh, units="cm", res=300)
+LCA
+dev.off()
+

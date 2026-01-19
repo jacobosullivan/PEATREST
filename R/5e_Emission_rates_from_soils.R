@@ -26,43 +26,63 @@ IPCC_CH4_F <- function(CH4_CO2) {
   return(list(R_CH4 = c(Exp = R_CH4, Min = R_CH4, Max = R_CH4)))
 }
 
-#' METAR_CO2_AB
+#' METAR21_CO2
+#' @param d_wt Average water table depth (undrained)
+#' @param CO2_C Molecular weight ratio C to CO2
+#' @return CO2 emissions rate meta-analytic regression Acid bog
+#' @export
+METAR21_CO2 <- function(CO2_C, d_wt) {
+  # Evans et al. 2021 https://doi.org/10.1038/s41586-021-03523-1
+  return(list(R_CO2 = CO2_C * (0.1341 * (d_wt*100) - 1.73)))
+}
+
+#' METAR21_CH4
+#' @param d_wt Average water table depth (undrained)
+#' @param CH4_CO2 CH4 to CO2 conversion factor
+#' @return CH4 emissions rate meta-analytic regression Acid bog
+#' @export
+METAR21_CH4 <- function(CO2_C, d_wt) {
+  # Evans et al. 2021 https://doi.org/10.1038/s41586-021-03523-1
+  return(list(R_CH4 = CO2_C * (0.334 * 0.5^(((d_wt*100) + 5) / 6.31))))
+}
+
+#' METAR97_CO2_AB
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
 #' @param CO2_C Molecular weight ratio C to CO2
 #' @return CO2 emissions rate meta-analytic regression Acid bog
 #' @export
-METAR_CO2_AB <- function(CO2_C, d_wt, T_air) {
+METAR97_CO2_AB <- function(CO2_C, d_wt, T_air) {
   return(list(R_CO2 = (CO2_C/1000) * ((6700 * exp(-0.26 * exp(-0.05153 * ((100*d_wt)-50)))) + ((72.54 * T_air) - 800))))
 }
 
-#' METAR_CH4_AB
+#' METAR97_CH4_AB
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
 #' @param CH4_CO2 CH4 to CO2 conversion factor
 #' @return CH4 emissions rate meta-analytic regression Acid bog
 #' @export
-METAR_CH4_AB <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
+METAR97_CH4_AB <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
   return(list(R_CH4 = (CH4_CO2/1000) * (500 * exp(-0.1234 * (100*d_wt)) + ((3.529*T_air) - 36.67))))
 }
 
-#' METAR_CO2_F
+#' METAR97_CO2_F
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
 #' @param CO2_C Molecular weight ratio C to CO2
 #' @return CO2 emissions rate meta-analytic regression Fen
 #' @export
-METAR_CO2_F <- function(CO2_C, d_wt, T_air) {
+METAR97_CO2_F <- function(CO2_C, d_wt, T_air) {
   return(list(R_CO2 = (CO2_C/1000) * (16244 * exp(-0.17594 * exp(-0.07346 * ((d_wt*100)-50))) + (153.234*T_air))))
 }
 
-#' METAR_CH4_F
+#' METAR97_CH4_F
 #' @param T_air Average air temperature
 #' @param d_wt Average water table depth (undrained)
 #' @param CH4_CO2 CH4 to CO2 conversion factor
 #' @return CO2 emissions rate meta-analytic regression Fen
 #' @export
-METAR_CH4_F <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
+METAR97_CH4_F <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
   return(list(R_CH4 = (CH4_CO2/1000) * (-10 + 563.6253 * exp(-0.09702 * (100*d_wt)) + (0.662183*T_air))))
 }
 
@@ -188,19 +208,36 @@ Emissions_rates_soils <- function(core.dat,
 
     if (peat_type[1] == 1) { # Acid bog selected
 
-      R_CO2_dry <- METAR_CO2_AB(CO2_C, d_wt_drained, T_air)
-      R_CO2_wet <- METAR_CO2_AB(CO2_C, d_wt, T_air)
+      if (0) {
+        R_CO2_dry <- METAR97_CO2_AB(CO2_C, d_wt_drained, T_air)
+        R_CO2_wet <- METAR97_CO2_AB(CO2_C, d_wt, T_air)
 
-      R_CH4_dry <- METAR_CH4_AB(CH4_CO2, d_wt_drained, T_air)
-      R_CH4_wet <- METAR_CH4_AB(CH4_CO2, d_wt, T_air)
+        R_CH4_dry <- METAR97_CH4_AB(CH4_CO2, d_wt_drained, T_air)
+        R_CH4_wet <- METAR97_CH4_AB(CH4_CO2, d_wt, T_air)
+      } else {
+        R_CO2_dry <- METAR21_CO2(CO2_C, d_wt_drained)
+        R_CO2_wet <- METAR21_CO2(CO2_C, d_wt)
+
+        R_CH4_dry <- METAR21_CH4(CO2_C, d_wt_drained)
+        R_CH4_wet <- METAR21_CH4(CO2_C, d_wt)
+      }
+
 
     } else { # Fen selected
 
-      R_CO2_dry <- METAR_CO2_F(CO2_C, d_wt_drained, T_air)
-      R_CO2_wet <- METAR_CO2_F(CO2_C, d_wt, T_air)
+      if (0) {
+        R_CO2_dry <- METAR97_CO2_F(CO2_C, d_wt_drained, T_air)
+        R_CO2_wet <- METAR97_CO2_F(CO2_C, d_wt, T_air)
 
-      R_CH4_dry <- METAR_CH4_F(CH4_CO2, d_wt_drained, T_air)
-      R_CH4_wet <- METAR_CH4_F(CH4_CO2, d_wt, T_air)
+        R_CH4_dry <- METAR97_CH4_F(CH4_CO2, d_wt_drained, T_air)
+        R_CH4_wet <- METAR97_CH4_F(CH4_CO2, d_wt, T_air)
+      } else {
+        R_CO2_dry <- METAR21_CO2(CO2_C, d_wt_drained)
+        R_CO2_wet <- METAR21_CO2(CO2_C, d_wt)
+
+        R_CH4_dry <- METAR21_CH4(CO2_C, d_wt_drained)
+        R_CH4_wet <- METAR21_CH4(CO2_C, d_wt)
+      }
 
     }
 
@@ -249,7 +286,6 @@ Emissions_rates_soils_RM <- function(core.dat,
 
   if (em_factor_meth_in[1] == 1) { # IPCC default calculation used
 
-
     R_CO2_wet <- vector(mode = "list", length = length(d_wt_drained))
     R_CO2_dry <- vector(mode = "list", length = length(d_wt_drained))
 
@@ -276,39 +312,76 @@ Emissions_rates_soils_RM <- function(core.dat,
 
     if (peat_type[1] == 1) { # Acid bog selected
 
-      R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
-        METAR_CO2_AB(CO2_C, x, T_air)
-      })
+      if (0) {
+        R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR97_CO2_AB(CO2_C, x, T_air)
+        })
 
-      R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
-        METAR_CO2_AB(CO2_C, x, T_air)
-      })
+        R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR97_CO2_AB(CO2_C, x, T_air)
+        })
 
-      R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
-        METAR_CH4_AB(CH4_CO2, x, T_air)
-      })
+        R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR97_CH4_AB(CH4_CO2, x, T_air)
+        })
 
-      R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
-        METAR_CH4_AB(CH4_CO2, x, T_air)
-      })
+        R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR97_CH4(CH4_CO2, x, T_air)
+        })
+      } else {
+        R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR21_CO2(CO2_C, x)
+        })
+
+        R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR21_CO2(CO2_C, x)
+        })
+
+        R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR21_CH4(CO2_C, x)
+        })
+
+        R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR21_CH4(CO2_C, x)
+        })
+      }
 
     } else { # Fen selected
 
-      R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
-        METAR_CO2_F(CO2_C, x, T_air)
-      })
+      if (0) {
+        R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR97_CO2_F(CO2_C, x, T_air)
+        })
 
-      R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
-        METAR_CO2_F(CO2_C, x, T_air)
-      })
+        R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR97_CO2_F(CO2_C, x, T_air)
+        })
 
-      R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
-        METAR_CH4_F(CH4_CO2, x, T_air)
-      })
+        R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR97_CH4_F(CH4_CO2, x, T_air)
+        })
 
-      R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
-        METAR_CH4_F(CH4_CO2, x, T_air)
-      })
+        R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR97_CH4_F(CH4_CO2, x, T_air)
+        })
+      } else {
+        R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR21_CO2(CO2_C, x, T_air)
+        })
+
+        R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR21_CO2(CO2_C, x, T_air)
+        })
+
+        R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
+          METAR21_CH4(CO2_C, x, T_air)
+        })
+
+        R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
+          METAR21_CH4(CO2_C, x, T_air)
+        })
+      }
+
     }
 
   } else if (em_factor_meth_in[1] == 3) { # Site specific calculation using ECOSSE regression method
@@ -422,8 +495,8 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   # Need to find an actual estimate for this or tune to fit some data
   # DO NOT set lower that 0.1 as it leads to fitting errors in the nls.
   # Increasing increases the rate of the logistic increase in root depth to maximum but obviously not the asymptote so outcomes are not very sensitive to this value
-  sigma_zR <- c(Scots_pine = 0.4,
-                Sitka_spruce = 0.2) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
+  sigma_zR <- c(Scots_pine = 0.2,
+                Sitka_spruce = 0.1) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
 
   # Extract inputs for easy access
   em_factor_meth_in <- core.dat$Em.factor.meth$em_factor_meth_in # Select IPCC default or ECOSSE model
@@ -432,6 +505,7 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   T_air <- core.dat$Peatland$T_air # Average air temperature
   Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
   t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_harv")
+  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv")
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   species <- c("Scots_pine", "Sitka_spruce")
 
@@ -456,8 +530,8 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
         mutate(V_r = B_r * sigma_zR[Spp_a],
                d_wt = V_r/10000,
                YC = YC_a0,
-               YC_avail = YC_a) %>%
-        mutate(d_wt = ifelse(d_wt > d_peat[[x]][y], d_peat[[x]][y], d_wt))
+               YC_avail = YC_a) #%>%
+        # mutate(d_wt = ifelse(d_wt > d_peat[[x]][y], d_peat[[x]][y], d_wt))
 
       res <- rbind(data.frame(Age = 0,
                               B_r = 0,
@@ -515,13 +589,22 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   names(d_wt_pred) <- names(YC)
 
   if (0) {
-    ggplot(bind_rows(d_wt),# %>% filter(Area == "Area.1", YC==12),
+    p <- ggplot(bind_rows(d_wt) %>% filter(Area == "Area.2", Age %% 3 == 0),
            aes(x=Age, y=d_wt, col=factor(YC))) +
       geom_point() +
-      geom_line(data=bind_rows(lapply(d_wt_pred, FUN=bind_rows))) +
-      facet_wrap(~ Area) +
+      scale_x_continuous(limits=c(NA, 200)) +
+      geom_line(data=bind_rows(lapply(d_wt_pred, FUN=bind_rows)) %>% filter(Area == "Area.2")) +
+      # facet_wrap(~ Area) +
       theme_bw() +
-      labs(x = "Stand age (yr)", y = "[Root/Water table] depth (m)", col="YC")
+      labs(x = "Stand age (yr)", y = "[Root / Water table] depth (m)", col="YC")
+
+    ww <- 11*0.8
+    hh <- 8*0.8
+    png("../Figures/root_depth.png",
+        width=ww, height=hh, units="cm", res=300)
+    p
+    dev.off()
+
   }
 
   if (em_factor_meth_in[1] == 1) { # IPCC default calculation used
@@ -549,7 +632,12 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       R_CO2_dry <- lapply(seq_along(d_wt_pred), FUN = function(x) {
         R_CO2_dry_a <- lapply(seq_along(d_wt_pred[[x]]), FUN = function(y) {
-          res <- METAR_CO2_AB(CO2_C, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          if (0) {
+            res <- METAR97_CO2_AB(CO2_C, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          } else {
+            res <- METAR21_CO2(CO2_C, d_wt_pred[[x]][[y]]$d_wt)
+          }
+
           df <- data.frame(t = d_wt_pred[[x]][[y]]$Age-t_harv[[x]][y],
                            d_wt = d_wt_pred[[x]][[y]]$d_wt,
                            R_CO2 = unname(res$R_CO2))
@@ -567,7 +655,12 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       R_CH4_dry <- lapply(seq_along(d_wt_pred), FUN = function(x) {
         R_CH4_dry_a <- lapply(seq_along(d_wt_pred[[x]]), FUN = function(y) {
-          res <- METAR_CH4_AB(CH4_CO2, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          if (0) {
+            res <- METAR97_CH4_AB(CH4_CO2, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          } else {
+            res <- METAR21_CH4(CO2_C, d_wt_pred[[x]][[y]]$d_wt)
+          }
+
           df <- data.frame(t = d_wt_pred[[x]][[y]]$Age-t_harv[[x]][y],
                            d_wt = d_wt_pred[[x]][[y]]$d_wt,
                            R_CH4 = unname(res$R_CH4))
@@ -586,7 +679,12 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       R_CO2_dry <- lapply(seq_along(d_wt_pred), FUN = function(x) {
         R_CO2_dry_a <- lapply(seq_along(d_wt_pred[[x]]), FUN = function(y) {
-          res <- METAR_CO2_F(CO2_C, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          if (0) {
+            res <- METAR97_CO2_F(CO2_C, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          } else {
+            res <- METAR21_CO2(CO2_C, d_wt_pred[[x]][[y]]$d_wt)
+          }
+
           df <- data.frame(t = d_wt_pred[[x]][[y]]$Age-t_harv[[x]][y],
                            d_wt = d_wt_pred[[x]][[y]]$d_wt,
                            R_CO2 = unname(res$R_CO2))
@@ -604,7 +702,12 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       R_CH4_dry <- lapply(seq_along(d_wt_pred), FUN = function(x) {
         R_CH4_dry_a <- lapply(seq_along(d_wt_pred[[x]]), FUN = function(y) {
-          res <- METAR_CH4_F(CH4_CO2, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          if (0) {
+            res <- METAR97_CH4_F(CH4_CO2, d_wt_pred[[x]][[y]]$d_wt, T_air[y])
+          } else {
+            res <- METAR21_CH4(CO2_C, d_wt_pred[[x]][[y]]$d_wt)
+          }
+
           df <- data.frame(t = d_wt_pred[[x]][[y]]$Age-t_harv[[x]][y],
                            d_wt = d_wt_pred[[x]][[y]]$d_wt,
                            R_CH4 = unname(res$R_CH4))
@@ -786,38 +889,46 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   }
 
   # Invert data structure
-  R_tot <- vector(mode = "list", length = length(d_wt))
-  names(R_tot) <- names(YC)
-  # for (i in 1:length(R_tot)) {
-  #   R_tot[[i]]$R_CO2_dry <- R_CO2_dry[[i]]
-  #   R_tot[[i]]$R_CH4_dry <- R_CH4_dry[[i]]
-  # }
+  L_tot <- vector(mode = "list", length = length(d_wt))
+  names(L_tot) <- names(YC)
 
   for (i in 1:length(R_tot)) {
-    R_tot[[i]] <- list(Exp = left_join(R_CO2_dry[[i]]$Exp,
+    L_tot[[i]] <- list(Exp = left_join(R_CO2_dry[[i]]$Exp,
                                        R_CH4_dry[[i]]$Exp,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
                          mutate(R_tot = R_CO2 + R_CH4) %>%
-                         pivot_longer(cols = c(R_CO2, R_CH4, R_tot), names_to = "source", values_to = "value"),
+                         mutate(L_tot = R_tot * A_harv[[i]][1],
+                                L_CO2 = R_CO2 * A_harv[[i]][1],
+                                L_CH4 = R_CH4 * A_harv[[i]][1]) %>%
+                         select(-c(R_tot, R_CO2, R_CH4)) %>%
+                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
                        Min = left_join(R_CO2_dry[[i]]$Min,
                                        R_CH4_dry[[i]]$Min,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
                          mutate(R_tot = R_CO2 + R_CH4) %>%
-                         pivot_longer(cols = c(R_CO2, R_CH4, R_tot), names_to = "source", values_to = "value"),
+                           mutate(L_tot = R_tot * A_harv[[i]][2],
+                                  L_CO2 = R_CO2 * A_harv[[i]][2],
+                                  L_CH4 = R_CH4 * A_harv[[i]][2]) %>%
+                           select(-c(R_tot, R_CO2, R_CH4)) %>%
+                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
                        Max = left_join(R_CO2_dry[[i]]$Max,
                                        R_CH4_dry[[i]]$Max,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
                          mutate(R_tot = R_CO2 + R_CH4) %>%
-                         pivot_longer(cols = c(R_CO2, R_CH4, R_tot), names_to = "source", values_to = "value"))
+                           mutate(L_tot = R_tot * A_harv[[i]][3],
+                                  L_CO2 = R_CO2 * A_harv[[i]][3],
+                                  L_CH4 = R_CH4 * A_harv[[i]][3]) %>%
+                           select(-c(R_tot, R_CO2, R_CH4)) %>%
+                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"))
   }
 
-  return(R_tot)
-  # return(R_tot = list(R_CO2 = R_CO2_dry,
+  return(L_tot)
+  # return(L_tot = list(R_CO2 = R_CO2_dry,
                       # R_CH4 = R_CH4_dry))
 }
 
 if (0) {
-
+  ## 1997 meta-analytic regression model
   d_wt <- seq(0, 1, length.out=101)
   TT <- seq(0, 10, length.out=5)
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
@@ -830,28 +941,28 @@ if (0) {
                     data.frame(d_wt = d_wt[i],
                                TT = TT[j],
                                source = "CO2",
-                               R = unlist(METAR_CO2_F(CO2_C,
+                               R = unlist(METAR97_CO2_F(CO2_C,
                                                       d_wt[i],
                                                       TT[j])),
                                peat_type = "F"),
                     data.frame(d_wt = d_wt[i],
                                TT = TT[j],
                                source = "CO2",
-                               R = unlist(METAR_CO2_AB(CO2_C,
+                               R = unlist(METAR97_CO2_AB(CO2_C,
                                                        d_wt[i],
                                                        TT[j])),
                                peat_type = "AB"),
                     data.frame(d_wt = d_wt[i],
                                TT = TT[j],
                                source = "CH4",
-                               R = unlist(METAR_CH4_F(CH4_CO2,
+                               R = unlist(METAR97_CH4_F(CH4_CO2,
                                                       d_wt[i],
                                                       TT[j])),
                                peat_type = "F"),
                     data.frame(d_wt = d_wt[i],
                                TT = TT[j],
                                source = "CH4",
-                               R = unlist(METAR_CH4_AB(CH4_CO2,
+                               R = unlist(METAR97_CH4_AB(CH4_CO2,
                                                        d_wt[i],
                                                        TT[j])),
                                peat_type = "AB"))
@@ -880,6 +991,39 @@ if (0) {
   ww <- 18
   hh <- 8
   png("../Figures/meta_analytic_emissions_rates.png", width=ww, height=hh, units="cm", res=300)
+  p0
+  dev.off()
+}
+
+if (0) {
+  ## 2021 meta-analytic regression model
+  d_wt <- seq(0, 1, length.out=101)
+  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  R_df <- c()
+
+  for (i in 1:length(d_wt)) {
+    R_df <- rbind(R_df,
+                  data.frame(d_wt = d_wt[i],
+                             source = "CO2",
+                             R = unlist(METAR21_CO2(CO2_C, d_wt[i]))),
+                  data.frame(d_wt = d_wt[i],
+                             source = "CH4",
+                             R = unlist(METAR21_CH4(CO2_C, d_wt[i]))))
+
+  }
+
+  p0 <- ggplot(R_df %>%
+                 mutate(source = factor(source, levels = c("CO2", "CH4"))) %>%
+                 filter(d_wt <= 1),
+               aes(x=d_wt, y=R)) +
+    geom_line() +
+    facet_wrap(~ source, scales="free_y") +
+    theme_bw() +
+    labs(x="Water table depth [m]", y="Emissions rate [t CO2 eq. ha-1 yr-1]", linetype="", col="T [C]")
+
+  ww <- 16
+  hh <- 8
+  png("../Figures/meta_analytic_emissions_rates_Evans_2021.png", width=ww, height=hh, units="cm", res=300)
   p0
   dev.off()
 }
