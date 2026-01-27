@@ -341,19 +341,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(E_fert) <- names(YC)
 
   # Biofuel handling
-  p_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "p_biofuel")
-  p_biofuel <- lapply(p_biofuel, FUN = function(x) {
-    if (is.null(x)) {
-      return(c(Exp = 0, Min = 0, Max = 0)) # add zero vector in case p_biofuel not passed
-    } else {
-    #   p_biofuel_a <- x[c(1,3,2)] # re-order min/max
-    #   names(p_biofuel_a) <- c("Exp", "Min", "Max")
-    #   return(p_biofuel_a)
-      return(x)
-    }
-  })
   r_CBiomass <- map(forestry.dat[grep("Area", names(forestry.dat))], "r_CBiomass")
-
   e_felled_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_felled_biofuel")
   e_biofuel_plant <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_biofuel_plant")
   e_biofuel_plant <- lapply(e_biofuel_plant, FUN = function(x) {
@@ -364,33 +352,28 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     }
   })
 
-  E_fossil_mix <- rep(list(core.dat$Counterfactual$E_fossil_mix), length = length(grep("Area", names(forestry.dat))))
-  names(E_fossil_mix) <- names(r_CBiomass)
+  E_grid_mix <- rep(list(core.dat$Counterfactual$E_grid_mix), length = length(grep("Area", names(forestry.dat))))
+  names(E_grid_mix) <- names(r_CBiomass)
 
   # Wood product handling
+  d_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_biofuel")
   d_wpF <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpF")
   d_wpM <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpM")
   d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
 
-  d_biofuel <- lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "d_biofuel"),
-                      FUN = function(x) {
-                        if (is.null(x)) { # add zero vector if not passed
-                          return(c(Exp = 0, Min = 0, Max = 0))
-                        } else {
-                          return(x)
-                        }
-                      })
-
   # Match object structure for downstream manipulations
   # Set to zero if not passed: max(0,NULL) returns 0
   d_wp <- lapply(seq_along(d_wpF), FUN = function(x) {
-    d_wp_a <- list(Exp = c(wpF = max(0,unname(d_wpF[[x]][1])),
+    d_wp_a <- list(Exp = c(Biofuel = max(0,unname(d_biofuel[[x]][1])),
+                           wpF = max(0,unname(d_wpF[[x]][1])),
                            wpM = max(0,unname(d_wpM[[x]][1])),
                            wpS = max(0,unname(d_wpS[[x]][1]))),
-                   Min = c(wpF = max(0,unname(d_wpF[[x]][2])),
+                   Min = c(Biofuel = max(0,unname(d_biofuel[[x]][2])),
+                           wpF = max(0,unname(d_wpF[[x]][2])),
                            wpM = max(0,unname(d_wpM[[x]][2])),
                            wpS = max(0,unname(d_wpS[[x]][2]))),
-                   Max = c(wpF = max(0,unname(d_wpF[[x]][3])),
+                   Max = c(Biofuel = max(0,unname(d_biofuel[[x]][3])),
+                           wpF = max(0,unname(d_wpF[[x]][3])),
                            wpM = max(0,unname(d_wpM[[x]][3])),
                            wpS = max(0,unname(d_wpS[[x]][3]))))
     return(d_wp_a)
@@ -468,6 +451,9 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   })
 
   names(V_harv) <- names(A_harv)
+
+  # JDebug:
+    # If mulching, I may not need to estimate harvesting emissions as both may be accounted for in mulching EF
 
   # Compute harvesting emissions
   L_harv <- lapply(seq_along(E_harv), FUN = function(x) {
@@ -649,7 +635,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(C_forest_tot) <- grep("Area", names(forestry.dat), value=T)
 
-  # Estimate woody biomass from CARBINE ratios
+  # Estimate above ground Carbon from CARBINE ratios
   C_forest <- lapply(seq_along(C_forest_tot), FUN = function(x) {
     res <- lapply(seq_along(C_forest_tot[[x]]), FUN = function(y) {
 
@@ -670,13 +656,13 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
-      rho_s <- growthYield.dat %>%
+      rho_ag <- growthYield.dat %>%
         filter(Spp == Spp_a,
                YC == YC_a,
                Age == t_harv_a) %>%
-        select(rho_s)
+        select(rho_ag)
 
-      C_forest_ag <- rho_s * C_forest_tot[[x]][y]
+      C_forest_ag <- rho_ag * C_forest_tot[[x]][y]
 
       return(C_forest_ag)
     })
@@ -688,14 +674,14 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(C_forest) <- grep("Area", names(forestry.dat), value=T)
 
   # Compute carbon content of forestry products converted to biofuel
-  C_biofuel <- list_op(l1 = C_forest,
-                       l2 = p_biofuel,
-                       func = "*")
+  # C_biofuel <- list_op(l1 = C_forest,
+  #                      l2 = p_biofuel,
+  #                      func = "*")
 
   # Subtract biofuel carbon from wood products
-  C_forest <- list_op(l1 = C_forest,
-                      l2 = C_biofuel,
-                      func = "-")
+  # C_forest <- list_op(l1 = C_forest,
+  #                     l2 = C_biofuel,
+  #                     func = "-")
 
   # Proportion of biomass used in long, medium and short lived wood products
   rho_wp <- lapply(seq_along(C_forest), FUN = function(x) {
@@ -721,7 +707,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
         filter(Spp == Spp_a,
                YC == YC_a,
                Age == t_harv_a) %>%
-        select(rho_wpF, rho_wpM, rho_wpS)
+        select(rho_Biofuel, rho_wpF, rho_wpM, rho_wpS)
 
       return(rho)
     })
@@ -759,7 +745,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   # Convert from units C to units Biomass
   B_wp <- lapply(seq_along(C_wp), FUN = function (x) {
     B_wp_a <- lapply(seq_along(C_wp[[x]]), FUN = function(y) {
-      B <- unlist(C_wp[[x]][[y]]) * r_CBiomass[[x]][[y]]
+      B <- unlist(C_wp[[x]][[y]]) / r_CBiomass[[x]][[y]]
       return(B)
     })
     names(B_wp_a) <- names(C_wp[[x]])
@@ -843,6 +829,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     L_T_wp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
       L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * E_transport[[x]][y]
       L_T <- data.frame(t = 0,
+                        L_T_Biofuel = unname(L_T["Biofuel"]),
                         L_T_wpF = unname(L_T["wpF"]),
                         L_T_wpM = unname(L_T["wpM"]),
                         L_T_wpS = unname(L_T["wpS"]))
@@ -859,16 +846,16 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   # estimate standing biomass of understory using the cumulative sum of understory
   # NPP. This is likely to include perennial species whose biomass is not retained year on year
 
-  CO2_biofuel <- lapply(C_biofuel, FUN = function(x) x * CO2_C)
+  # CO2_biofuel <- lapply(C_biofuel, FUN = function(x) x * CO2_C)
 
-  B_biofuel <- list_op(l1 = C_biofuel,
-                       l2 = lapply(r_CBiomass,
-                                   FUN = function(x) {
-                                     x <- x[c(1,3,2)] # re-arrange Min, Max
-                                     names(x) <- c("Exp", "Min", "Max")
-                                     return(x)
-                                   }),
-                       func = "/")
+  # B_biofuel <- list_op(l1 = C_biofuel,
+  #                      l2 = lapply(r_CBiomass,
+  #                                  FUN = function(x) {
+  #                                    x <- x[c(1,3,2)] # re-arrange Min, Max
+  #                                    names(x) <- c("Exp", "Min", "Max")
+  #                                    return(x)
+  #                                  }),
+  #                      func = "/")
 
   # multiply the power value of the biofuel by the efficiency of the biomass power plant for global efficiency value
   e_biofuel <- list_op(l1 = e_felled_biofuel,
@@ -878,37 +865,53 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   if (0) {
 
     # Energy generated by biomass plant (MWh) = Biomass (t) * Power value of biomass (MWh t-1) * Power plant efficiency
-    P_biofuel <- list_op(l1 = B_biofuel,
+    P_biofuel <- list_op(l1 = lapply(seq_along(B_wp), FUN = function(x) {
+                                unlist(lapply(B_wp[[x]], FUN=function(y) unname(y["Biofuel"])))
+                              }),
                          l2 = e_felled_biofuel,
                          l3 = e_biofuel_plant, # power value of forestry biomass X efficiency of biomass power plant
                          func = "*")
 
-    E_biofuel <- list_op(l1 = CO2_biofuel,
+    names(P_biofuel) <- names(e_felled_biofuel)
+
+    E_biofuel <- list_op(l1 = lapply(seq_along(CO2_wp), FUN = function(x) {
+                                unlist(lapply(CO2_wp[[x]], FUN=function(y) unname(y["Biofuel"])))
+                              }),
                          l2 = P_biofuel,
                          func = "/")
 
-    CO2_counterfactual <- list_op(l1 = P_biofuel,
-                                  l2 = E_fossil_mix,
-                                  func = "*")
+    names(E_biofuel) <- names(e_felled_biofuel)
 
-    CO2_biofuel
+    E_biofuel <- lapply(E_biofuel, FUN = function(x) {
+      x[is.infinite(x)] <- 0
+      return(x)
+    })
+
+    CO2_counterfactual <- list_op(l1 = P_biofuel,
+                                  l2 = E_grid_mix,
+                                  func = "*")
 
   }
 
-  L_biofuel <- list_op(l1 = CO2_biofuel,
-                       l2 = list_op(l1 = B_biofuel,
-                                    l2 = e_biofuel, # power value of forestry biomass X efficiency of biomass power plant
-                                    l3 = E_fossil_mix, # emissions factor of counterfactual
+  L_biofuel <- list_op(l1 = lapply(seq_along(CO2_wp), FUN = function(x) { # Extract biofuel from CO2 content object
+                                     unlist(lapply(CO2_wp[[x]], FUN=function(y) unname(y["Biofuel"])))
+                                   }),
+                       l2 = list_op(l1 = e_biofuel, # power value of forestry biomass X efficiency of biomass power plant
+                                    l2 = lapply(seq_along(B_wp), FUN = function(x) { # Extract biofuel from biomass object
+                                      unlist(lapply(B_wp[[x]], FUN=function(y) unname(y["Biofuel"])))
+                                    }),
+                                    l3 = E_grid_mix, # emissions factor of counterfactual
                                     func = "*"),
                        func = "-")
+  names(L_biofuel) <- names(CO2_wp)
 
-  L_biofuel <- lapply(L_biofuel, FUN = function(x) {
-    x[2:3] <- sort(x[2:3], decreasing = F) # re-order min max IF max is less negative (reduces carbon payback time)
-    names(x) <- c("Exp", "Min", "Max")
-    return(x)
-  })
-
-  L_biofuel <- lapply(L_biofuel, FUN = as.list)
+  # L_biofuel <- lapply(L_biofuel, FUN = function(x) {
+  #   x[2:3] <- sort(x[2:3], decreasing = F) # re-order min max IF max is less negative (reduces carbon payback time)
+  #   names(x) <- c("Exp", "Min", "Max")
+  #   return(x)
+  # })
+  #
+  # L_biofuel <- lapply(L_biofuel, FUN = as.list)
 
   L_biofuel <- lapply(seq_along(L_biofuel), FUN = function(x) {
     res <- lapply(seq_along(L_biofuel[[x]]), FUN = function(y) {
@@ -921,27 +924,27 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     return(res)
   })
 
-  names(L_biofuel) <- names(L_biofuel)
+  names(L_biofuel) <- names(C_forest)
 
-  L_T_biofuel <- list_op(l1 = B_biofuel,
-                         l2 = d_biofuel,
-                         l3 = E_transport,
-                         func = "*")
-
-  L_T_biofuel <- lapply(L_T_biofuel, FUN = as.list)
-
-  L_T_biofuel <- lapply(seq_along(L_T_biofuel), FUN = function(x) {
-    res <- lapply(seq_along(L_T_biofuel[[x]]), FUN = function(y) {
-      df <- data.frame(t = 0,
-                       L_T_biofuel = L_T_biofuel[[x]][y])
-      names(df)[2] <- "L_T_biofuel"
-      return(df)
-    })
-    names(res) <- names(L_T_biofuel[[x]])
-    return(res)
-  })
-
-  names(L_T_biofuel) <- names(B_biofuel)
+  # L_T_biofuel <- list_op(l1 = B_biofuel,
+  #                        l2 = d_biofuel,
+  #                        l3 = E_transport,
+  #                        func = "*")
+  #
+  # L_T_biofuel <- lapply(L_T_biofuel, FUN = as.list)
+  #
+  # L_T_biofuel <- lapply(seq_along(L_T_biofuel), FUN = function(x) {
+  #   res <- lapply(seq_along(L_T_biofuel[[x]]), FUN = function(y) {
+  #     df <- data.frame(t = 0,
+  #                      L_T_biofuel = L_T_biofuel[[x]][y])
+  #     names(df)[2] <- "L_T_biofuel"
+  #     return(df)
+  #   })
+  #   names(res) <- names(L_T_biofuel[[x]])
+  #   return(res)
+  # })
+  #
+  # names(L_T_biofuel) <- names(B_biofuel)
 
   # Invert data structure
   L_forest <- vector(mode = "list", length=length(grep("Area", names(forestry.dat))))
@@ -960,7 +963,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     L_forest[[i]]$L_wp <- CO2_wp_decay[[i]]
     L_forest[[i]]$L_T_wp <- L_T_wp[[i]]
     L_forest[[i]]$L_biofuel <- L_biofuel[[i]]
-    L_forest[[i]]$L_T_biofuel <- L_T_biofuel[[i]]
+    # L_forest[[i]]$L_T_biofuel <- L_T_biofuel[[i]]
   }
 
   return(L_forest)

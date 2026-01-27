@@ -236,16 +236,18 @@ getConstructionInputData <- function(path, df_struct) {
 getGrowthYieldData <- function() {
   gy <- suppressMessages(read_xlsx("Templates/Growth_and_yield.xlsx",
                   sheet = "Sheet1",
-                  range = "A2:AM459",
+                  range = "A2:AO738",
                   progress = F))
 
   gy <- gy %>%
     rename(Spp = "Tree Spp",
            H = "Top ht m",
            V = "Vol m³/ha",
+           V_Biofuel = "Volume fuel (m3/ha)",
            V_wpF = "Volume short-lived products (m3/ha)",
            V_wpM = "Volume medium-lived products (m3/ha)",
            V_wpS = "Volume long-lived products (m3/ha)",
+           B_Biofuel = "Biomass fuel (odt/ha)",
            B_wpF = "Biomass short-lived products (odt/ha)",
            B_wpM = "Biomass medium-lived products (odt/ha)",
            B_wpS = "Biomass long-lived products (odt/ha)",
@@ -253,13 +255,15 @@ getGrowthYieldData <- function() {
            B_c = "Crown biomass (odt/ha)",
            B_r = "Root biomass (odt/ha)",
            V_a = "Total above ground tree volume (m3/ha)",
-           B_ga = "Above-ground biomass (t green/ha)") %>%
-    select(Spp, YC, Age, H, V, V_wpF, V_wpM, V_wpS, B_wpF, B_wpM, B_wpS, B_s, B_c, B_r, V_a, B_ga) %>%
+           B_ag = "Total above ground tree biomass (odt/ha)",
+           B_ag_gr = "Total above ground tree biomass (t green/ha)") %>%
+    select(Spp, YC, Age, H, V, V_Biofuel, V_wpF, V_wpM, V_wpS, B_Biofuel, B_wpF, B_wpM, B_wpS, B_s, B_c, B_r, V_a, B_ag, B_ag_gr) %>%
     mutate(Spp = stringr::str_replace(Spp, "\\ ", "_")) %>%
-    mutate(rho_s = B_s / (B_s + B_c + B_r), # prop stem to total biomass
-           rho_wpF = B_wpF / B_s, # prop fast decay prod to total stem
-           rho_wpM = B_wpM / B_s, # prop medium decay prod to total stem
-           rho_wpS = B_wpS / B_s) # prop slow decay prod to total stem
+    mutate(rho_ag = B_ag / (B_s + B_c + B_r), # prop above ground to total biomass
+           rho_Biofuel = B_Biofuel / B_ag, # prop biofuel to total above ground biomass
+           rho_wpF = B_wpF / B_ag, # prop fast decay prod to total above ground biomass
+           rho_wpM = B_wpM / B_ag, # prop medium decay prod to total above ground biomass
+           rho_wpS = B_wpS / B_ag) # prop slow decay prod to total above ground biomass
 
   return(gy)
 }
