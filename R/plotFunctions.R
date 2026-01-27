@@ -108,7 +108,7 @@ plotL_forest <- function(L_forest) {
   L_forest_df$sink <- -1
   L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
   L_forest_df$discrete <- 0
-  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_turf_import", "L_turf_local", "L_fert", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "S_biofuel")] <- 1
+  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_biofuel")] <- 1
   L_forest_df <- L_forest_df %>%
     mutate(value = ifelse(value==0, NA, value))
 
@@ -126,6 +126,7 @@ plotL_forest <- function(L_forest) {
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Discrete harvesting/management emissions [tCO2]", col="", title="Discrete management emissions")
 
+  ## ADD A BAR PLOT HERE TO MAKE THE ONE-OFF EMISSIONS EASIER TO READ
   return(list(p1, p2))
 }
 
@@ -210,7 +211,7 @@ plotL_DPOC <- function(L_DPOC) {
 #' @export
 plotL_forest_soils <- function(L_forest_soils) {
 
-  coeff <- 10
+  coeff <- 20
 
   L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
     mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))

@@ -495,19 +495,36 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   # Need to find an actual estimate for this or tune to fit some data
   # DO NOT set lower that 0.1 as it leads to fitting errors in the nls.
   # Increasing increases the rate of the logistic increase in root depth to maximum but obviously not the asymptote so outcomes are not very sensitive to this value
-  sigma_zR <- c(Scots_pine = 0.2,
-                Sitka_spruce = 0.1) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
+  sigma_zR <- c(Scots_pine = 0.1,
+                Sitka_spruce = 0.05) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
 
   # Extract inputs for easy access
   em_factor_meth_in <- core.dat$Em.factor.meth$em_factor_meth_in # Select IPCC default or ECOSSE model
   peat_type <- core.dat$Peatland$peat_type # Select acid bog or fen
   d_peat <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_peat")
+  d_drain <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_drain")
   T_air <- core.dat$Peatland$T_air # Average air temperature
   Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
   t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_harv")
   A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv")
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   species <- c("Scots_pine", "Sitka_spruce")
+  soil_type <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "soil_type")
+
+  # Rooting depth estimates from https://cdn.forestresearch.gov.uk/1967/03/fcbu040.pdf
+  # Ideally use more recent data with YC component for this!
+  d_root_peaty_gley <- 0.42
+  d_root_deep_peat <- 0.66
+
+  d_root <- lapply(seq_along(d_peat), FUN = function(x) {
+    if (soil_type[[x]][1]) { # Peaty gley selected
+      d_root_a <- c(Exp = d_root_peaty_gley, Min = d_root_peaty_gley, Max = d_root_peaty_gley)
+    } else { # Deep peat selected
+      d_root_a <- c(Exp = d_root_deep_peat, Min = d_root_deep_peat, Max = d_root_deep_peat)
+    }
+  })
+
+  names(d_root) <- names(d_peat)
 
   # Get rooting depths for water table estimates
   d_wt <- lapply(seq_along(YC), FUN = function(x) {
@@ -531,15 +548,16 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
                d_wt = V_r/10000,
                YC = YC_a0,
                YC_avail = YC_a) #%>%
-        # mutate(d_wt = ifelse(d_wt > d_peat[[x]][y], d_peat[[x]][y], d_wt))
+        # mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
+        # mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
 
-      res <- rbind(data.frame(Age = 0,
-                              B_r = 0,
-                              V_r = 0,
-                              d_wt = 0,
-                              YC = YC_a0,
-                              YC_avail = YC_a),
-                   res)
+      # res <- rbind(data.frame(Age = 0:(min(res$Age)-1),
+      #                         B_r = 0,
+      #                         V_r = 0,
+      #                         d_wt = unname(d_drain[[x]][y]),
+      #                         YC = unname(YC_a0),
+      #                         YC_avail = YC_a),
+      #              res)
 
       res$Area <- names(YC)[x]
 
@@ -557,13 +575,25 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       YC_a <- unique(d_wt[[x]]$YC)[y]
 
-      fit <- nls(
-        d_wt ~ d_peat[[x]][y] / (1 + exp(-k * (Age - x0))),
-        data = d_wt[[x]] %>% filter(YC==YC_a),
-        start = list(k = 1, # growth rate
-                     x0 = 50), # midpoint
-        control = nls.control(maxiter = 100, warnOnly = TRUE)
-      )
+      logist.fit <- F
+      if (logist.fit) { # logistic fit
+        # fit <- nls(
+        #   d_wt ~ min(d_peat[[x]][y], d_root[[x]][y]) / (1 + exp(-k * (Age - x0))),
+        #   data = d_wt[[x]] %>% filter(YC==YC_a),
+        #   start = list(k = 1, # growth rate
+        #                x0 = 50), # midpoint
+        #   control = nls.control(maxiter = 100, warnOnly = TRUE)
+        fit <- nls(
+          d_wt ~ min(d_peat[[x]][y], d_root[[x]][y]) / (1 + ((min(d_peat[[x]][y], d_root[[x]][y]) - d_drain[[x]][y])/d_drain[[x]][y]) * exp(-k * (Age - x0))),
+          data = d_wt[[x]] %>% filter(YC==YC_a),
+          start = list(k = 1, # growth rate
+                       x0 = 50), # midpoint
+          control = nls.control(maxiter = 100, warnOnly = TRUE)
+        )
+
+      } else { # linear fit
+        fit <- lm(d_wt ~ Age, data = d_wt[[x]] %>% filter(YC==YC_a))
+      }
 
       Age_pred <- 0:(500+t_harv[[x]][y])
       pred <- data.frame(Age = Age_pred)
@@ -573,11 +603,18 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
       # pred$YC = unique(d_wt[[x]]$YC)[y]
       pred$d_wt <- predict(fit, newdata = pred)
 
+
       if (0) {
         ggplot(d_wt[[x]] %>% filter(YC==YC_a),
                aes(x=Age, y=d_wt)) +
           geom_point() +
           geom_line(data=pred)
+      }
+
+      if (!logist.fit) {
+        pred <- pred %>%
+          mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
+          mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
       }
 
       # return(df)
@@ -600,7 +637,7 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
     ww <- 11*0.8
     hh <- 8*0.8
-    png("../Figures/root_depth.png",
+    png("../Figures/root_depth_bounded_linear.png",
         width=ww, height=hh, units="cm", res=300)
     p
     dev.off()
@@ -892,7 +929,7 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   L_tot <- vector(mode = "list", length = length(d_wt))
   names(L_tot) <- names(YC)
 
-  for (i in 1:length(R_tot)) {
+  for (i in 1:length(L_tot)) {
     L_tot[[i]] <- list(Exp = left_join(R_CO2_dry[[i]]$Exp,
                                        R_CH4_dry[[i]]$Exp,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%

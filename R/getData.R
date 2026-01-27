@@ -109,7 +109,7 @@ getForestryInputData <- function(path, df_struct) {
     mutate(Input.data=str_remove(Input.data, "\\.\\..*")) %>%
     filter(!(is.na(Exp) & is.na(Min) & is.na(Max))) %>% # if all inputs are NA, remove
     group_by(Subset.name) %>%
-    mutate(Subset.name=ifelse(n() <= 10 & length(grep("Area", Subset.name))>0, NA, Subset.name)) %>% # remove 'singletons': these are empty areas with non NA pow_curve/soil_type/rotation/restoration_interventions due to drop down menu
+    mutate(Subset.name=ifelse(n() <= 11 & length(grep("Area", Subset.name))>0, NA, Subset.name)) %>% # remove 'singletons': these are empty areas with non NA pow_curve/soil_type/rotation/restoration_interventions due to drop down menu
     ungroup() %>%
     filter(!is.na(Subset.name)) %>%
     filter(!is.na(Variable.name))
@@ -256,10 +256,10 @@ getGrowthYieldData <- function() {
            B_ga = "Above-ground biomass (t green/ha)") %>%
     select(Spp, YC, Age, H, V, V_wpF, V_wpM, V_wpS, B_wpF, B_wpM, B_wpS, B_s, B_c, B_r, V_a, B_ga) %>%
     mutate(Spp = stringr::str_replace(Spp, "\\ ", "_")) %>%
-    mutate(B_tot = B_s + B_c + B_r) %>%
-    mutate(rho_wpF = B_wpF / B_tot,
-           rho_wpM = B_wpM / B_tot,
-           rho_wpS = B_wpS / B_tot)
+    mutate(rho_s = B_s / (B_s + B_c + B_r), # prop stem to total biomass
+           rho_wpF = B_wpF / B_s, # prop fast decay prod to total stem
+           rho_wpM = B_wpM / B_s, # prop medium decay prod to total stem
+           rho_wpS = B_wpS / B_s) # prop slow decay prod to total stem
 
   return(gy)
 }

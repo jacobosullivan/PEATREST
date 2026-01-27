@@ -119,42 +119,42 @@ LCA
 ww <- 16
 hh <- 12
 
-png("../Figures/LCA implementation/S_forest.png",
+png("../Figures/LCA implementation/V2/S_forest.png",
     width=ww, height=hh, units="cm", res=300)
 p_S_forest
 dev.off()
 
-png("../Figures/LCA implementation/L_forest_soils.png",
+png("../Figures/LCA implementation/V2/L_forest_soils.png",
     width=ww, height=hh, units="cm", res=300)
 p_L_forest_soils
 dev.off()
 
-png("../Figures/LCA implementation/L_forest_cont.png",
+png("../Figures/LCA implementation/V2/L_forest_cont.png",
     width=ww, height=hh, units="cm", res=300)
 p_L_forest[[1]]
 dev.off()
 
-png("../Figures/LCA implementation/L_forest_disc.png",
+png("../Figures/LCA implementation/V2/L_forest_disc.png",
     width=ww, height=hh, units="cm", res=300)
 p_L_forest[[2]]
 dev.off()
 
-png("../Figures/LCA implementation/S_bog_plants.png",
+png("../Figures/LCA implementation/V2/S_bog_plants.png",
     width=ww, height=hh, units="cm", res=300)
 p_S_bog_plants
 dev.off()
 
-png("../Figures/LCA implementation/L_peatland.png",
+png("../Figures/LCA implementation/V2/L_peatland.png",
     width=ww, height=hh, units="cm", res=300)
 p_L_microbes
 dev.off()
 
-png("../Figures/LCA implementation/L_DPOC.png",
+png("../Figures/LCA implementation/V2/L_DPOC.png",
     width=ww, height=hh, units="cm", res=300)
 p_L_DPOC
 dev.off()
 
-png("../Figures/LCA implementation/LCA.png",
+png("../Figures/LCA implementation/V2/LCA.png",
     width=ww, height=hh, units="cm", res=300)
 LCA
 dev.off()

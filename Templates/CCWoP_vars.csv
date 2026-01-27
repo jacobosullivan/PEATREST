@@ -112,12 +112,13 @@ Performance,NA,Windfarm,forestry
 Height of turbines (m),H_turb,Windfarm,forestry
 Average site windspeed (m s-1),Vwind_site,Windfarm,forestry
 Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
-Emissions due to forestry operations,NA,Emissions,forestry
+Emissions due to forestry/restoration operations,NA,Emissions,forestry
 Emissions from felling (g CO2 m-3),E_harv,Emissions,forestry
 Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
 Emissions from mulching (g CO2 m-3),E_mulch,Emissions,forestry
 Emissions from damming (kg CO2 ha-1),E_dam,Emissions,forestry
 Emissions from bunding (kg CO2 ha-1),E_bund,Emissions,forestry
+Emissions from peat smoothing (kg CO2 ha-1),E_smooth,Emissions,forestry
 Emissions from turfing (imported) (kg CO2 ha-1),E_turf_import,Emissions,forestry
 Emissions from turfing (local) (kg CO2 ha-1),E_turf_local,Emissions,forestry
 Emissions from lime and fertilser treatment (kg CO2 ha-1),E_fert,Emissions,forestry
@@ -138,6 +139,7 @@ Input used to parameterise 3PG module,NA,Area.1,forestry
 Yield class,YC,Area.1,forestry
 Average tree height (m),h_tree,Area.1,forestry
 Stand age (yr),t_stand,Area.1,forestry
+Depth of peat drainage for forestry (m),d_drain,Area.1,forestry
 Is forestry being rotated?,rotation,Area.1,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.1,forestry
 "Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.1,forestry
@@ -148,6 +150,7 @@ Timber left in situ mulched?,mulch,Area.1,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.1,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.1,forestry
 Distance to biofuel plant (km),d_biofuel,Area.1,forestry
+Efficiency of the biomass power plant,e_biofuel_plant,Area.1,forestry
 Felling regime,NA,Area.1,forestry
 Age of forestry when felled (yr),t_harv,Area.1,forestry
 Total area felled (ha),A_harv,Area.1,forestry
@@ -170,6 +173,7 @@ Expected post-restoration water table depth (m),d_wt_restored,Area.1,forestry
 Management interventions,NA,Area.1,forestry
 Gully/grip (drain) blocking,dam,Area.1,forestry
 Surface/shallow bunding,bund,Area.1,forestry
+Peat smoothing (including stump flipping),smooth,Area.1,forestry
 Direct re-vegetation of bog plants (imported turf),turf_import,Area.1,forestry
 Direct re-vegetation of bog plants (local turf),turf_local,Area.1,forestry
 Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.1,forestry
@@ -188,6 +192,7 @@ Input used to parameterise 3PG module,NA,Area.2,forestry
 Yield class,YC,Area.2,forestry
 Average tree height (m),h_tree,Area.2,forestry
 Stand age (yr),t_stand,Area.2,forestry
+Depth of peat drainage for forestry (m),d_drain,Area.2,forestry
 Is forestry being rotated?,rotation,Area.2,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.2,forestry
 "Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.2,forestry
@@ -198,6 +203,7 @@ Timber left in situ mulched?,mulch,Area.2,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.2,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.2,forestry
 Distance to biofuel plant (km),d_biofuel,Area.2,forestry
+Efficiency of the biomass power plant,e_biofuel_plant,Area.2,forestry
 Felling regime,NA,Area.2,forestry
 Age of forestry when felled (yr),t_harv,Area.2,forestry
 Total area felled (ha),A_harv,Area.2,forestry
@@ -220,6 +226,7 @@ Expected post-restoration water table depth (m),d_wt_restored,Area.2,forestry
 Management interventions,NA,Area.2,forestry
 Gully/grip (drain) blocking,dam,Area.2,forestry
 Surface/shallow bunding,bund,Area.2,forestry
+Peat smoothing (including stump flipping),smooth,Area.2,forestry
 Direct re-vegetation of bog plants (imported turf),turf_import,Area.2,forestry
 Direct re-vegetation of bog plants (local turf),turf_local,Area.2,forestry
 Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.2,forestry
@@ -238,6 +245,7 @@ Input used to parameterise 3PG module,NA,Area.3,forestry
 Yield class,YC,Area.3,forestry
 Average tree height (m),h_tree,Area.3,forestry
 Stand age (yr),t_stand,Area.3,forestry
+Depth of peat drainage for forestry (m),d_drain,Area.3,forestry
 Is forestry being rotated?,rotation,Area.3,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.3,forestry
 "Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.3,forestry
@@ -248,6 +256,7 @@ Timber left in situ mulched?,mulch,Area.3,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.3,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.3,forestry
 Distance to biofuel plant (km),d_biofuel,Area.3,forestry
+Efficiency of the biomass power plant,e_biofuel_plant,Area.3,forestry
 Felling regime,NA,Area.3,forestry
 Age of forestry when felled (yr),t_harv,Area.3,forestry
 Total area felled (ha),A_harv,Area.3,forestry
@@ -270,6 +279,7 @@ Expected post-restoration water table depth (m),d_wt_restored,Area.3,forestry
 Management interventions,NA,Area.3,forestry
 Gully/grip (drain) blocking,dam,Area.3,forestry
 Surface/shallow bunding,bund,Area.3,forestry
+Peat smoothing (including stump flipping),smooth,Area.3,forestry
 Direct re-vegetation of bog plants (imported turf),turf_import,Area.3,forestry
 Direct re-vegetation of bog plants (local turf),turf_local,Area.3,forestry
 Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.3,forestry
@@ -288,6 +298,7 @@ Input used to parameterise 3PG module,NA,Area.4,forestry
 Yield class,YC,Area.4,forestry
 Average tree height (m),h_tree,Area.4,forestry
 Stand age (yr),t_stand,Area.4,forestry
+Depth of peat drainage for forestry (m),d_drain,Area.4,forestry
 Is forestry being rotated?,rotation,Area.4,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.4,forestry
 "Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.4,forestry
@@ -298,6 +309,7 @@ Timber left in situ mulched?,mulch,Area.4,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.4,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.4,forestry
 Distance to biofuel plant (km),d_biofuel,Area.4,forestry
+Efficiency of the biomass power plant,e_biofuel_plant,Area.4,forestry
 Felling regime,NA,Area.4,forestry
 Age of forestry when felled for windfarm (yr),t_harv,Area.4,forestry
 Total area felled (ha),A_harv,Area.4,forestry
@@ -320,6 +332,7 @@ Expected post-restoration water table depth (m),d_wt_restored,Area.4,forestry
 Management interventions,NA,Area.4,forestry
 Gully/grip (drain) blocking,dam,Area.4,forestry
 Surface/shallow bunding,bund,Area.4,forestry
+Peat smoothing (including stump flipping),smooth,Area.4,forestry
 Direct re-vegetation of bog plants (imported turf),turf_import,Area.4,forestry
 Direct re-vegetation of bog plants (local turf),turf_local,Area.4,forestry
 Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.4,forestry
@@ -338,6 +351,7 @@ Input used to parameterise 3PG module,NA,Area.5,forestry
 Yield class,YC,Area.5,forestry
 Average tree height (m),h_tree,Area.5,forestry
 Stand age (yr),t_stand,Area.5,forestry
+Depth of peat drainage for forestry (m),d_drain,Area.5,forestry
 Is forestry being rotated?,rotation,Area.5,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.5,forestry
 "Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.5,forestry
@@ -348,6 +362,7 @@ Timber left in situ mulched?,mulch,Area.5,forestry
 Felled Forest Biomass used as biofuel?,NA,Area.5,forestry
 Proportion of harvested forestry used for biofuel,p_biofuel,Area.5,forestry
 Distance to biofuel plant (km),d_biofuel,Area.5,forestry
+Efficiency of the biomass power plant,e_biofuel_plant,Area.5,forestry
 Felling regime,NA,Area.5,forestry
 Age of forestry when felled (yr),t_harv,Area.5,forestry
 Total area felled (ha),A_harv,Area.5,forestry
@@ -370,6 +385,7 @@ Expected post-restoration water table depth (m),d_wt_restored,Area.5,forestry
 Management interventions,NA,Area.5,forestry
 Gully/grip (drain) blocking,dam,Area.5,forestry
 Surface/shallow bunding,bund,Area.5,forestry
+Peat smoothing (including stump flipping),smooth,Area.5,forestry
 Direct re-vegetation of bog plants (imported turf),turf_import,Area.5,forestry
 Direct re-vegetation of bog plants (local turf),turf_local,Area.5,forestry
 Indirect re-vegetation of bog plants (lime and fertilization),fert,Area.5,forestry
