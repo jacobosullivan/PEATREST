@@ -397,3 +397,112 @@ run_3PG <- function(t_rotation = 50, # rotation length
               NPP_0 = NPP_0,
               NPP_01 = NPP_01))
 }
+
+if(0) {
+
+  # Run 3PG for variety of YCs for illustrative plotting
+
+  # Get 3PG templates
+  parms_3PG <- read_excel("Templates/3PG_parms.xlsx",
+                          sheet = "3PG_parms",
+                          range = "A1:E24")
+
+  species <- c("Scots_Pine", "Sitka_Spruce")
+
+  parms_3PG <- as.data.frame(parms_3PG %>%
+                               filter(complete.cases(.)) %>%
+                               select(Var_name, all_of(species)))
+
+  f_E_coef <-  read_excel("Templates/f_E_coef.xlsx",
+                          range = "A1:H7")
+
+  # Extract input variables for easy access
+  # YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  # Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+
+  YC <- c(6,8,10,12)
+  Spp <- 2
+
+  ## Estimate NPP_max for full 3PG simulation based on YC
+  NPP_Max <- sapply(seq_along(YC),
+                    FUN = function(x) {
+                      Spp_a <- species[Spp]
+                      YC_a <- YC[x]
+
+                      aa <- f_E_coef %>%
+                        filter(spp == Spp_a) %>%
+                        filter(y=="NPP_max", x=="YC") %>%
+                        select(-c(y, x, spp)) %>%
+                        unlist()
+
+                      NPP_max <- aa[1] + aa[2]*YC_a + aa[3]*YC_a^2 + aa[4]*YC_a^3 + aa[5]*YC_a^4
+
+                      return(NPP_max)
+                    })
+
+  ## Estimate f_E for simplified 3PG simulation based on NPP_max
+  f_E <- sapply(seq_along(YC),
+                FUN = function(x) {
+                  Spp_a <- species[Spp]
+                  NPP_Max_a <- NPP_Max[x]
+
+                  aa <- f_E_coef %>%
+                    filter(spp == Spp_a) %>%
+                    filter(y=="f_E", x=="NPP_max_LCA") %>%
+                    select(-c(y, x, spp)) %>%
+                    unlist()
+
+                  f_E <- aa[1] + aa[2]*NPP_Max_a + aa[3]*NPP_Max_a^2 + aa[4]*NPP_Max_a^3 + aa[5]*NPP_Max_a^4
+                  return(f_E)
+                })
+
+  # Get full parameter lists for each area
+  parms_3PG_by_area <- matrix(0, nrow = nrow(parms_3PG), ncol = length(YC),
+                              dimnames = list(c(parms_3PG$Var_name),
+                                              paste0("YC", 1:length(YC))))
+
+  for (i in 1:length(YC)) {
+    parms_3PG_by_area[parms_3PG$Var_name,i] <- parms_3PG[,which(colnames(parms_3PG) == species[Spp])]
+    parms_3PG_by_area["f_E",i] <- unname(f_E[i])
+    parms_3PG_by_area["t_wf",i] <- 250
+    parms_3PG_by_area["t_rotation",i] <- parms_3PG_by_area["t_wf",i]
+  }
+
+  # 3PG is run using a nested, vectorised approach for efficiency
+  # Nesting applies run_3PG to a) Each area, b) Each of Exp, Min, Max
+  # run_3PG will internally estimate the various total sequestration values
+  # These are stored in the output as NPP_0, NPP_01
+  # Full trajectories are also returned
+
+  out <- apply(parms_3PG_by_area,
+               MAR = 2,
+               FUN = function(x) {
+                 do.call(run_3PG, as.list(c(x, c(replant=0), c(thin=NA))))
+               })
+
+  res <- c()
+
+  for (i in 1:length(out)) {
+    res_yc <- out[[i]]$res %>%
+      select(t, NPP) %>%
+      mutate(YC = YC[i])
+
+    res <- rbind(res,
+                 res_yc)
+  }
+
+  p3PG <- ggplot(res, aes(x=t, y=3.67*NPP, col=factor(YC))) +
+    geom_line() +
+    labs(x="Stand age (yr)", y="Sequestration (t CO2 ha-1 yr-1)", col="YC") +
+    scale_y_continuous(limits = c(NA, 30)) +
+    theme_bw()
+
+  ww <- 16
+  hh <- 12
+
+  png("../Figures/LCA implementation/V2/3PG_seq.png",
+      width=ww/1.5, height=hh/1.6, units="cm", res=300)
+  p3PG
+  dev.off()
+
+}

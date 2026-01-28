@@ -259,7 +259,10 @@ getGrowthYieldData <- function() {
            B_ag_gr = "Total above ground tree biomass (t green/ha)") %>%
     select(Spp, YC, Age, H, V, V_Biofuel, V_wpF, V_wpM, V_wpS, B_Biofuel, B_wpF, B_wpM, B_wpS, B_s, B_c, B_r, V_a, B_ag, B_ag_gr) %>%
     mutate(Spp = stringr::str_replace(Spp, "\\ ", "_")) %>%
-    mutate(rho_ag = B_ag / (B_s + B_c + B_r), # prop above ground to total biomass
+    mutate(rho_r = B_r / (B_s + B_c + B_r), # prop above ground to total biomass
+           rho_s = B_s / (B_s + B_c + B_r), # prop above ground to total biomass
+           rho_c = B_c / (B_s + B_c + B_r), # prop above ground to total biomass
+           rho_ag = B_ag / (B_s + B_c + B_r), # prop above ground to total biomass
            rho_Biofuel = B_Biofuel / B_ag, # prop biofuel to total above ground biomass
            rho_wpF = B_wpF / B_ag, # prop fast decay prod to total above ground biomass
            rho_wpM = B_wpM / B_ag, # prop medium decay prod to total above ground biomass

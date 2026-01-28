@@ -67,11 +67,11 @@ p_L_forest[[2]]
 ########################### Bog plant sequestration ############################
 ################################################################################
 
-S_bog_plants <- Bog_plant_sequestration_RM(core.dat,
-                                           forestry.dat)
+# S_bog_plants <- Bog_plant_sequestration_RM(core.dat,
+                                           # forestry.dat)
 
-p_S_bog_plants <- plotS_bog_plants(S_bog_plants)
-p_S_bog_plants
+# p_S_bog_plants <- plotS_bog_plants(S_bog_plants)
+# p_S_bog_plants
 
 ################################################################################
 ########################## Emissions rates from soils ##########################
@@ -118,6 +118,23 @@ LCA
 
 ww <- 16
 hh <- 12
+
+require(scales)
+pWP <- ggplot(growthYield.dat %>% filter(YC == 10, Spp == "Sitka_spruce") %>%
+                select(Age, rho_Biofuel, rho_wpF, rho_wpM, rho_wpS) %>%
+                pivot_longer(cols = starts_with("rho_"),
+                             names_to = "product"),
+              aes(x=Age, y=value, col=factor(product))) +
+  geom_line() +
+  scale_color_manual(values = hue_pal()(4),
+                     labels = c(expression(rho[B]), expression(rho[F]), expression(rho[M]), expression(rho[S]))) +
+  theme_bw() +
+  labs(x="Stand age (y)", y="Proportional allocation", col="")
+
+png("../Figures/LCA implementation/V2/wood_products.png",
+    width=ww/1.5, height=hh/1.6, units="cm", res=300)
+pWP
+dev.off()
 
 png("../Figures/LCA implementation/V2/S_forest.png",
     width=ww, height=hh, units="cm", res=300)

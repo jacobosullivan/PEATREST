@@ -115,7 +115,7 @@ Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
 Emissions due to forestry/restoration operations,NA,Emissions,forestry
 Emissions from felling (g CO2 m-3),E_harv,Emissions,forestry
 Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
-Emissions from mulching (g CO2 m-3),E_mulch,Emissions,forestry
+Emissions from mulching (kg CO2 ha-1),E_mulch,Emissions,forestry
 Emissions from damming (kg CO2 ha-1),E_dam,Emissions,forestry
 Emissions from bunding (kg CO2 ha-1),E_bund,Emissions,forestry
 Emissions from peat smoothing (kg CO2 ha-1),E_smooth,Emissions,forestry
@@ -142,7 +142,7 @@ Stand age (yr),t_stand,Area.1,forestry
 Depth of peat drainage for forestry (m),d_drain,Area.1,forestry
 Is forestry being rotated?,rotation,Area.1,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.1,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.1,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",timber_removed,Area.1,forestry
 Distance to paper mill (km),d_wpF,Area.1,forestry
 Distance to wood panel mill (km),d_wpM,Area.1,forestry
 Distance to saw mill (km),d_wpS,Area.1,forestry
@@ -195,7 +195,7 @@ Stand age (yr),t_stand,Area.2,forestry
 Depth of peat drainage for forestry (m),d_drain,Area.2,forestry
 Is forestry being rotated?,rotation,Area.2,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.2,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.2,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",timber_removed,Area.2,forestry
 Distance to paper mill (km),d_wpF,Area.2,forestry
 Distance to wood panel mill (km),d_wpM,Area.2,forestry
 Distance to saw mill (km),d_wpS,Area.2,forestry
@@ -248,7 +248,7 @@ Stand age (yr),t_stand,Area.3,forestry
 Depth of peat drainage for forestry (m),d_drain,Area.3,forestry
 Is forestry being rotated?,rotation,Area.3,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.3,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.3,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",timber_removed,Area.3,forestry
 Distance to paper mill (km),d_wpF,Area.3,forestry
 Distance to wood panel mill (km),d_wpM,Area.3,forestry
 Distance to saw mill (km),d_wpS,Area.3,forestry
@@ -301,7 +301,7 @@ Stand age (yr),t_stand,Area.4,forestry
 Depth of peat drainage for forestry (m),d_drain,Area.4,forestry
 Is forestry being rotated?,rotation,Area.4,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.4,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.4,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",timber_removed,Area.4,forestry
 Distance to paper mill (km),d_wpF,Area.4,forestry
 Distance to wood panel mill (km),d_wpM,Area.4,forestry
 Distance to saw mill (km),d_wpS,Area.4,forestry
@@ -354,7 +354,7 @@ Stand age (yr),t_stand,Area.5,forestry
 Depth of peat drainage for forestry (m),d_drain,Area.5,forestry
 Is forestry being rotated?,rotation,Area.5,forestry
 Length of rotation (yr) (50 yr default),t_rotation,Area.5,forestry
-"Felled Forest Biomass used for timber products (if No, left in situ)?",NA,Area.5,forestry
+"Felled Forest Biomass used for timber products (if No, left in situ)?",timber_removed,Area.5,forestry
 Distance to paper mill (km),d_wpF,Area.5,forestry
 Distance to wood panel mill (km),d_wpM,Area.5,forestry
 Distance to saw mill (km),d_wpS,Area.5,forestry

@@ -268,21 +268,26 @@ Emissions_rates_soils_RM <- function(core.dat,
   peat_type <- core.dat$Peatland$peat_type # Select acid bog or fen
   T_air <- core.dat$Peatland$T_air # Average air temperature
 
-  # JDebug: This may need to be replaced with d_peat / maxrootdepth inputs for forestry WTD
+  # Extract UI forestry WTD and modify to represent hydrological impact of harvesting
+  # 45% reduction in WTD following removal of trees: crude estimate from Gaffney et al. 2018
   d_wt_drained <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_drained") # User estimated average water table depth pre-restoration
-
   d_wt_drained <- lapply(d_wt_drained, FUN = function(x) {
-    x <- x[c(1,3,2)] # re-order min/max
+    # JDebug: this is probably wrong, payback time will be larger for large initial WTD
+    # x <- x[c(1,3,2)] # re-order min/max
+    x <- x * (1 - 0.45)
     names(x) <- c("Exp", "Min", "Max")
     return(x)
   })
 
-  d_wt_restored <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_restored") # User estimated average water table depth post-restoration
-  d_wt_restored <- lapply(d_wt_restored, FUN = function(x) {
-    x <- x[c(1,3,2)] # re-order min/max
-    names(x) <- c("Exp", "Min", "Max")
-    return(x)
-  })
+  # User estimated average water table depth post-restoration - default values from pristine bog controls set to 5 (1, 10) cm, Gaffney et al. (2018)
+  d_wt_restored <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_restored")
+
+  # JDebug: this is probably wrong, payback time will be larger for large initial WTD
+  # d_wt_restored <- lapply(d_wt_restored, FUN = function(x) {
+  #   x <- x[c(1,3,2)] # re-order min/max
+  #   names(x) <- c("Exp", "Min", "Max")
+  #   return(x)
+  # })
 
   if (em_factor_meth_in[1] == 1) { # IPCC default calculation used
 
