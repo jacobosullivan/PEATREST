@@ -313,7 +313,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   # Emissions factors
   E_transport <- rep(list(forestry.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 km-1 to t CO2 km-3
-  E_harv <- rep(list(forestry.dat$Emissions$E_harv / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
+  E_harv <- rep(list(forestry.dat$Emissions$E_harv / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
   E_mulch <- rep(list(forestry.dat$Emissions$E_mulch / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
   E_dam <- rep(list(forestry.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
   E_bund <- rep(list(forestry.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
@@ -334,7 +334,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(mulch) <- names(timber_removed)
   dam <- map(forestry.dat[grep("Area", names(forestry.dat))], "dam")
   bund <- map(forestry.dat[grep("Area", names(forestry.dat))], "bund")
-  smooth <- map(forestry.dat[grep("Area", names(forestry.dat))], "bund")
+  smooth <- map(forestry.dat[grep("Area", names(forestry.dat))], "smooth")
   turf_import <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_import")
   turf_local <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_local")
   fert <- map(forestry.dat[grep("Area", names(forestry.dat))], "fert")
@@ -434,20 +434,24 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
 
   # Match object structure for downstream manipulations
-  # Set to zero if not passed: max(0,NULL) returns 0
   d_wp <- lapply(seq_along(d_wpF), FUN = function(x) {
-    d_wp_a <- list(Exp = c(Biofuel = max(0,unname(d_biofuel[[x]][1])),
-                           wpF = max(0,unname(d_wpF[[x]][1])),
-                           wpM = max(0,unname(d_wpM[[x]][1])),
-                           wpS = max(0,unname(d_wpS[[x]][1]))),
-                   Min = c(Biofuel = max(0,unname(d_biofuel[[x]][2])),
-                           wpF = max(0,unname(d_wpF[[x]][2])),
-                           wpM = max(0,unname(d_wpM[[x]][2])),
-                           wpS = max(0,unname(d_wpS[[x]][2]))),
-                   Max = c(Biofuel = max(0,unname(d_biofuel[[x]][3])),
-                           wpF = max(0,unname(d_wpF[[x]][3])),
-                           wpM = max(0,unname(d_wpM[[x]][3])),
-                           wpS = max(0,unname(d_wpS[[x]][3]))))
+    if (timber_removed[[x]][1]==1) {
+      d_wp_a <- list(Exp = c(Biofuel = unname(d_biofuel[[x]][1]),
+                             wpF = unname(d_wpF[[x]][1]),
+                             wpM = unname(d_wpM[[x]][1]),
+                             wpS = unname(d_wpS[[x]][1])),
+                     Min = c(Biofuel = unname(d_biofuel[[x]][2]),
+                             wpF = unname(d_wpF[[x]][2]),
+                             wpM = unname(d_wpM[[x]][2]),
+                             wpS = unname(d_wpS[[x]][2])),
+                     Max = c(Biofuel = unname(d_biofuel[[x]][3]),
+                             wpF = unname(d_wpF[[x]][3]),
+                             wpM = unname(d_wpM[[x]][3]),
+                             wpS = unname(d_wpS[[x]][3])))
+    } else {
+      d_wp_a <- NULL
+    }
+
     return(d_wp_a)
   })
 
@@ -456,9 +460,10 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   # Get exponential decay rates for wood products
   alpha_dat <- read_xlsx("Templates/alpha_wp.xlsx",
                          sheet = "Sheet1",
-                         range = "A1:D8",
+                         range = "A1:F10",
                          progress = F)
 
+  # Get decay rate parameters
   alpha <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {
       ## if distance to processing sites not passed, assume forestry products left in situ
@@ -467,14 +472,14 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
       if (mulch[[x]][1]==1) {
         alpha_a <- alpha_a %>%
-          filter(Compartment %in% c("Roots", "Brash"))
+          filter(Compartment %in% c("Roots", "Mulch", "Foliage"))
       } else {
         alpha_a <- alpha_a %>%
-          filter(Compartment != "Brash")
+          filter(Compartment != "Mulch")
       }
     } else {
       alpha_a <- alpha_dat %>%
-        filter(Type == "Processed")
+        filter(Type == "Processed" | Compartment == "Foliage")
     }
     alpha_wp <- alpha_a$alpha
     names(alpha_wp) <- stringr::str_replace(alpha_a$Var, "alpha_", "")
@@ -482,6 +487,39 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   })
 
   names(alpha) <- names(d_wp)
+
+  # Get decay efficiency parameters (set to 1 by default)
+  delta <- lapply(seq_along(d_wp), FUN = function(x) {
+    if (all(unlist(d_wp[[x]]) == 0)) {
+      ## if distance to processing sites not passed, assume forestry products left in situ
+      delta_a <- alpha_dat %>%
+        filter(Type == "Unprocessed")
+
+      if (mulch[[x]][1]==1) {
+        delta_a <- delta_a %>%
+          filter(Compartment %in% c("Roots", "Mulch", "Foliage"))
+      } else {
+        delta_a <- delta_a %>%
+          filter(Compartment != "Mulch")
+      }
+
+      delta_wp <- delta_a$delta
+      names(delta_wp) <- stringr::str_replace(delta_a$Var, "alpha_", "")
+
+    } else {
+      delta_a <- alpha_dat %>%
+        filter(Type == "Processed" | Compartment == "Foliage")
+
+      delta_wp <- delta_a$delta
+      names(delta_wp) <- stringr::str_replace(delta_a$Var, "alpha_", "")
+
+      delta_wp <- c(Biofuel=1, delta_wp) # add biofuel for carbon partitioning (always equal to 1 as all material is burnt)
+    }
+
+    return(delta_wp)
+  })
+
+  names(delta) <- names(d_wp)
 
   species <- c("Scots_pine", "Sitka_spruce")
 
@@ -523,9 +561,6 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(V_harv) <- names(A_harv)
 
-  # JDebug:
-    # If mulching, I may not need to estimate harvesting emissions as both may be accounted for in mulching EF
-
   # Compute harvesting emissions
   L_harv <- lapply(seq_along(E_harv), FUN = function(x) {
     L_harv_a <- lapply(seq_along(E_harv[[x]]), FUN = function(y) {
@@ -547,7 +582,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   L_mulch <- lapply(seq_along(E_mulch), FUN = function(x) {
     L_mulch_a <- lapply(seq_along(E_mulch[[x]]), FUN = function(y) {
 
-      L_mulch_a <- V_harv[[x]][y] * E_mulch[[x]][y]
+      L_mulch_a <- A_harv[[x]][y] * E_mulch[[x]][y]
 
       L_mulch_a <- data.frame(t = 0,
                               L_mulch = unname(L_mulch_a))
@@ -714,7 +749,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(C_forest) <- grep("Area", names(forestry.dat), value=T)
 
-  # Proportion of biomass used in long, medium and short lived wood products
+  # Proportion of biomass in different decay compartments
   rho_wp <- lapply(seq_along(C_forest), FUN = function(x) {
     rho_wp_a <- lapply(seq_along(C_forest[[x]]), FUN = function(y) {
       Spp_a <- species[Spp[[x]][1]]
@@ -739,7 +774,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
           filter(Spp == Spp_a,
                  YC == YC_a,
                  Age == t_harv_a) %>%
-          select(rho_Biofuel, rho_wpF, rho_wpM, rho_wpS)
+          select(rho_Biofuel, rho_wpF, rho_wpM, rho_wpS, rho_wpO, rho_f)
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched
@@ -747,14 +782,13 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%
-            mutate(rho_b = rho_s + rho_c) %>%
-            select(rho_r, rho_b)
+            select(rho_r, rho_m, rho_f)
         } else { # not mulched
           rho <- growthYield.dat %>%
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%
-            select(rho_r, rho_s, rho_c)
+            select(rho_r, rho_s, rho_b, rho_f)
         }
       }
 
@@ -767,9 +801,10 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(rho_wp) <- names(C_forest)
 
+  # Compute carbon content of the decomposable proportion of the material (i.e. accounting for the decay efficiency)
   C_wp <- lapply(seq_along(C_forest), FUN = function(x) {
     C_wp_a <- lapply(seq_along(C_forest[[x]]), FUN = function(y) {
-      C <- unlist(rho_wp[[x]][[y]]) * C_forest[[x]][[y]]
+      C <- unlist(rho_wp[[x]][[y]]) * delta[[x]] * C_forest[[x]][[y]]
       names(C) <- stringr::str_replace(names(C), "rho_", "")
       return(C)
     })
@@ -791,10 +826,16 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
   names(CO2_wp) <- names(C_wp)
 
-  # Convert from units C to units Biomass
+  # Convert from units C to units Biomass (select only wood products as these are used for transport/biofuels)
   B_wp <- lapply(seq_along(C_wp), FUN = function (x) {
     B_wp_a <- lapply(seq_along(C_wp[[x]]), FUN = function(y) {
       B <- unlist(C_wp[[x]][[y]]) / r_CBiomass[[x]][[y]]
+      wps <- c("Biofuel", "wpF", "wpM", "wpS")
+      if (!sum(names(B) %in% wps)) { # no wps detected
+        B <- NULL
+      } else {
+        B <- B[names(B) %in% wps]
+      }
       return(B)
     })
     names(B_wp_a) <- names(C_wp[[x]])
@@ -821,35 +862,43 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
         res <- data.frame(t=tt,
                           S_wpF=CO2_wp[[x]][[y]]["wpF"] * exp(-tt*alpha[[x]]["wpF"]),
                           S_wpM=CO2_wp[[x]][[y]]["wpM"] * exp(-tt*alpha[[x]]["wpM"]),
-                          S_wpS=CO2_wp[[x]][[y]]["wpS"] * exp(-tt*alpha[[x]]["wpS"]))
+                          S_wpS=CO2_wp[[x]][[y]]["wpS"] * exp(-tt*alpha[[x]]["wpS"]),
+                          S_wpO=CO2_wp[[x]][[y]]["wpO"] * exp(-tt*alpha[[x]]["wpO"]),
+                          S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]))
 
         res <- res %>%
           mutate(L_wpF = replace_na(lag(S_wpF, n = 1) - S_wpF, 0),
                  L_wpM = replace_na(lag(S_wpM, n = 1) - S_wpM, 0),
-                 L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0)) %>%
-          select(t, L_wpF, L_wpM, L_wpS)
+                 L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0),
+                 L_wpO = replace_na(lag(S_wpO, n = 1) - S_wpO, 0),
+                 L_f = replace_na(lag(S_f, n = 1) - S_f, 0)) %>%
+          select(t, L_wpF, L_wpM, L_wpS, L_wpO, L_f)
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched
           res <- data.frame(t=tt,
                             S_r=CO2_wp[[x]][[y]]["r"] * exp(-tt*alpha[[x]]["r"]),
-                            S_b=CO2_wp[[x]][[y]]["b"] * exp(-tt*alpha[[x]]["b"]))
+                            S_m=CO2_wp[[x]][[y]]["m"] * exp(-tt*alpha[[x]]["m"]),
+                            S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]))
 
           res <- res %>%
             mutate(L_r = replace_na(lag(S_r, n = 1) - S_r, 0),
-                   L_b = replace_na(lag(S_b, n = 1) - S_b, 0)) %>%
-            select(t, L_r, L_b)
+                   L_m = replace_na(lag(S_m, n = 1) - S_m, 0),
+                   L_f = replace_na(lag(S_f, n = 1) - S_f, 0)) %>%
+            select(t, L_r, L_m, L_f)
         } else { # not mulched
           res <- data.frame(t=tt,
                             S_r=CO2_wp[[x]][[y]]["r"] * exp(-tt*alpha[[x]]["r"]),
                             S_s=CO2_wp[[x]][[y]]["s"] * exp(-tt*alpha[[x]]["s"]),
+                            S_s=CO2_wp[[x]][[y]]["b"] * exp(-tt*alpha[[x]]["b"]),
                             S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]))
 
           res <- res %>%
             mutate(L_r = replace_na(lag(S_r, n = 1) - S_r, 0),
                    L_s = replace_na(lag(S_s, n = 1) - S_s, 0),
+                   L_b = replace_na(lag(S_b, n = 1) - S_b, 0),
                    L_f = replace_na(lag(S_f, n = 1) - S_f, 0)) %>%
-            select(t, L_r, L_s, L_s)
+            select(t, L_r, L_s, L_b, L_s)
         }
 
       }
@@ -865,12 +914,21 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   ## Esimate transportion emissions B*D*E
   L_T_wp <- lapply(seq_along(B_wp), FUN = function (x) {
     L_T_wp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
-      L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * E_transport[[x]][y]
-      L_T <- data.frame(t = 0,
-                        L_T_Biofuel = unname(L_T["Biofuel"]),
-                        L_T_wpF = unname(L_T["wpF"]),
-                        L_T_wpM = unname(L_T["wpM"]),
-                        L_T_wpS = unname(L_T["wpS"]))
+      if (timber_removed[[x]][1] == 1) {
+        L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * E_transport[[x]][y]
+        L_T <- data.frame(t = 0,
+                          L_T_Biofuel = unname(L_T["Biofuel"]),
+                          L_T_wpF = unname(L_T["wpF"]),
+                          L_T_wpM = unname(L_T["wpM"]),
+                          L_T_wpS = unname(L_T["wpS"]))
+      } else {
+        L_T <- data.frame(t = 0,
+                          L_T_Biofuel = 0,
+                          L_T_wpF = 0,
+                          L_T_wpM = 0,
+                          L_T_wpS = 0)
+      }
+
       return(L_T)
     })
     names(L_T_wp_a) <- names(B_wp[[x]])

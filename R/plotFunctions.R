@@ -15,6 +15,9 @@ getDf1 <- function(list_ob) {
     })
     return(res)
   }))
+
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
+
   return(list_ob_df)
 }
 
@@ -34,6 +37,10 @@ getDf2 <- function(list_ob) {
     })
     return(res)
   }))
+
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
+
+  return(list_ob_df)
 }
 
 #' getDf3
@@ -58,6 +65,9 @@ getDf3 <- function(list_ob) {
   })
 
   list_ob_df <- bind_rows(unlist(list_ob_df, recursive = F))
+  list_ob_df <- list_ob_df %>%
+    mutate(value = ifelse(value==0, NA, value))
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
 
   return(list_ob_df)
 }
@@ -108,25 +118,31 @@ plotL_forest <- function(L_forest) {
   L_forest_df$sink <- -1
   L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
   L_forest_df$discrete <- 0
-  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_biofuel")] <- 1
+  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_Biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_Biofuel")] <- 1
   L_forest_df <- L_forest_df %>%
     mutate(value = ifelse(value==0, NA, value))
 
-  p1 <- ggplot(L_forest_df %>% filter(discrete == 0), aes(x=t, y=value*sink, linetype=factor(source))) +
-    geom_line(col="red3") +
+  p1 <- ggplot(L_forest_df %>% filter(discrete == 0), aes(x=t, y=value*sink, col=factor(source))) +
+    geom_line() +
     scale_x_continuous(limits = c(0, 50)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Wood product decay emissions [tCO2]", linetype="", title="Forestry product emissions")
+    labs(x="Time since harvesting [y]", y="Decay emissions [tCO2]", col="", title="Forestry biomass decay emissions")
 
-  p2 <- ggplot(L_forest_df %>% filter(discrete == 1), aes(x=t, y=value*sink, col=factor(source))) +
+  source_l <- sort(unique((L_forest_df %>% filter(discrete == 1))$source))
+  source_l <- c("L_Biofuel", source_l[source_l != "L_Biofuel"])
+  p2 <- ggplot(L_forest_df %>%
+                 filter(discrete == 1) %>%
+                 mutate(source = factor(source, levels = source_l)),
+               aes(x=factor(source), y=value, col=factor(source))) +
     geom_point() +
-    scale_x_continuous(limits = c(0, 30)) +
-    facet_grid(Est ~ Area, scales="free_y") +
+    guides(col="none") +
+    scale_y_continuous(transform = "log10") +
+    facet_grid(Est ~ Area) +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Discrete harvesting/management emissions [tCO2]", col="", title="Discrete management emissions")
+    labs(x="Time since harvesting [y]", y="Harvesting / restoration emissions [tCO2]", col="", title="Discrete management emissions") +
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
 
-  ## ADD A BAR PLOT HERE TO MAKE THE ONE-OFF EMISSIONS EASIER TO READ
   return(list(p1, p2))
 }
 
@@ -163,23 +179,30 @@ plotS_bog_plants <- function(S_bog_plants) {
   return(p)
 }
 
-#' plotL_microbes
-#' @param L_microbes Microbial emissions output
+#' plotL_peatland
+#' @param L_peatland Microbial emissions output
 #' @return plot
 #' @export
-plotL_microbes <- function(L_microbes) {
+plotL_peatland <- function(L_peatland) {
 
 
-  L_microbes_df <- getDf2(L_microbes)
+  L_peatland_df <- getDf2(L_peatland)
 
-  p <- ggplot(L_microbes_df %>%
-                mutate(source = factor(source, levels = c("L_CO2", "L_CH4"))),
+  L_peatland_df <- bind_rows(L_peatland_df,
+                             L_peatland_df %>%
+                               group_by(t, Area, Est) %>%
+                               summarise(value=sum(value)) %>%
+                               mutate(source = "L_tot")) %>%
+                   arrange(t, Area, Est)
+
+  p <- ggplot(L_peatland_df %>%
+                mutate(source = factor(source, levels = c("L_tot", "L_CO2", "L_CH4"))),
               aes(x=t, y=value, linetype=factor(source))) +
     geom_line(col="red3") +
-    scale_x_continuous(limits = c(min(L_microbes_df$t), 200)) +
+    scale_x_continuous(limits = c(min(L_peatland_df$t), 200)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Peatland microbial emissions [tCO2 eq.]", linetype="", title="Peatland emissions (microbial)")
+    labs(x="Time since harvesting [y]", y="Peatland emissions [tCO2 eq.]", linetype="", title="Peatland emissions")
 
   return(p)
 }
@@ -215,18 +238,6 @@ plotL_forest_soils <- function(L_forest_soils) {
 
   L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
     mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))
-
-  # ggplot(L_forest_soils_df %>% filter(Est == "Exp", Area == "Area.1"), aes(x=t + 50)) +
-  #   geom_line(aes(y=value, col=source)) +
-  #   geom_line(aes(y=d_wt*coeff), col="grey") +
-  #   scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
-  #                      sec.axis = sec_axis(~./coeff, name = "Root / Water table depth (m)")) +
-  #   scale_x_continuous(limits=c(NA, 100)) +
-  #   # geom_vline(xintercept = 0, linetype=3) +
-  #   facet_grid(Est ~ Area) +#, scales="free_y") +
-  #   theme_bw() +
-  #   theme(axis.title.y.right = element_text(color = "grey")) +
-  #   labs(x = "Time (yr)", col="")
 
   p <- ggplot(L_forest_soils_df, aes(x=t)) +
     geom_line(aes(y=value, col=source)) +

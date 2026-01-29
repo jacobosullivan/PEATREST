@@ -22,8 +22,8 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
   A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
   t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow") # time between felling and restoration
-  t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_microbes") # time to restoration of microbial function
-  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_microbes") # shape parameter for restoration of microbial function
+  t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_peatland") # time to restoration of microbial function
+  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_peatland") # shape parameter for restoration of microbial function
 
   ## Compute emissions rates from deforested, unrestored peatland
 
@@ -100,7 +100,7 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   }
 
   ## Interpolate emissions across restoration phase (arbitrary asymptotic function)
-  L_CO2_microbes <- lapply(seq_along(A_harv), FUN = function(x) {
+  L_CO2_peatland <- lapply(seq_along(A_harv), FUN = function(x) {
     res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
       rest_dyn_mod(t = 1:t_restore[[x]][y],
                    n = n_restore[[x]][y],
@@ -112,7 +112,7 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
     return(res)
   })
 
-  L_CH4_microbes <- lapply(seq_along(A_harv), FUN = function(x) {
+  L_CH4_peatland <- lapply(seq_along(A_harv), FUN = function(x) {
     res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
       rest_dyn_mod(t = 1:t_restore[[x]][y],
                    n = n_restore[[x]][y],
@@ -125,76 +125,76 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   })
 
   # Add fallow period to time series
-  L_CO2_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function(x) {
-    res <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
-      return(c(rep(CO2_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CO2_microbes[[x]][y]))))
+  L_CO2_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      return(c(rep(CO2_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CO2_peatland[[x]][y]))))
     })
-    names(res) <- names(L_CO2_microbes[[x]])
+    names(res) <- names(L_CO2_peatland[[x]])
     return(res)
   })
 
-  L_CH4_microbes <- lapply(seq_along(L_CH4_microbes), FUN = function(x) {
-    res <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
-      return(c(rep(CH4_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CH4_microbes[[x]][y]))))
+  L_CH4_peatland <- lapply(seq_along(L_CH4_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      return(c(rep(CH4_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CH4_peatland[[x]][y]))))
     })
-    names(res) <- names(L_CH4_microbes[[x]])
+    names(res) <- names(L_CH4_peatland[[x]])
     return(res)
   })
 
   # Extend time series to 500 years (if t_payback > 500, these will need to be extended again in the run script)
-  L_CO2_microbes <- lapply(seq(L_CO2_microbes), FUN = function(x) {
-    res <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
-      ext <- 501 - length(unlist(L_CO2_microbes[[x]][y]))
-      return(unname(c(unlist(L_CO2_microbes[[x]][y]), rep(CO2_wet[[x]][y], ext))))
+  L_CO2_peatland <- lapply(seq(L_CO2_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CO2_peatland[[x]][y]))
+      return(unname(c(unlist(L_CO2_peatland[[x]][y]), rep(CO2_wet[[x]][y], ext))))
     })
-    names(res) <- names(L_CO2_microbes[[x]])
+    names(res) <- names(L_CO2_peatland[[x]])
     return(res)
   })
 
-  L_CH4_microbes <- lapply(seq(L_CH4_microbes), FUN = function(x) {
-    res <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
-      ext <- 501 - length(unlist(L_CH4_microbes[[x]][y]))
-      return(unname(c(unlist(L_CH4_microbes[[x]][y]), rep(CH4_wet[[x]][y], ext))))
+  L_CH4_peatland <- lapply(seq(L_CH4_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CH4_peatland[[x]][y]))
+      return(unname(c(unlist(L_CH4_peatland[[x]][y]), rep(CH4_wet[[x]][y], ext))))
     })
-    names(res) <- names(L_CH4_microbes[[x]])
+    names(res) <- names(L_CH4_peatland[[x]])
     return(res)
   })
 
   # Update data structure to timeseries/dataframes
-  L_CO2_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function (x) {
-    L_CO2_microbes_a <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
-      L <- data.frame(t = 0:(length(L_CO2_microbes[[x]][[y]])-1),
-                      L_CO2 = L_CO2_microbes[[x]][[y]])
+  L_CO2_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function (x) {
+    L_CO2_peatland_a <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CO2_peatland[[x]][[y]])-1),
+                      L_CO2 = L_CO2_peatland[[x]][[y]])
       return(L)
     })
-    names(L_CO2_microbes_a) <- names(L_CO2_microbes[[x]])
-    return(L_CO2_microbes_a)
+    names(L_CO2_peatland_a) <- names(L_CO2_peatland[[x]])
+    return(L_CO2_peatland_a)
   })
 
-  L_CH4_microbes <- lapply(seq_along(L_CH4_microbes), FUN = function (x) {
-    L_CH4_microbes_a <- lapply(seq_along(L_CH4_microbes[[x]]), FUN = function(y) {
-      L <- data.frame(t = 0:(length(L_CH4_microbes[[x]][[y]])-1),
-                      L_CH4 = L_CH4_microbes[[x]][[y]])
+  L_CH4_peatland <- lapply(seq_along(L_CH4_peatland), FUN = function (x) {
+    L_CH4_peatland_a <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CH4_peatland[[x]][[y]])-1),
+                      L_CH4 = L_CH4_peatland[[x]][[y]])
       return(L)
     })
-    names(L_CH4_microbes_a) <- names(L_CH4_microbes[[x]])
-    return(L_CH4_microbes_a)
+    names(L_CH4_peatland_a) <- names(L_CH4_peatland[[x]])
+    return(L_CH4_peatland_a)
   })
 
-  names(L_CO2_microbes) <- names(A_harv)
-  names(L_CH4_microbes) <- names(A_harv)
+  names(L_CO2_peatland) <- names(A_harv)
+  names(L_CH4_peatland) <- names(A_harv)
 
-  L_microbes <- lapply(seq_along(L_CO2_microbes), FUN = function (x) {
-    L_microbes_a <- lapply(seq_along(L_CO2_microbes[[x]]), FUN = function(y) {
-      L <- L_CO2_microbes[[x]][[y]]
-      L$L_CH4 <- L_CH4_microbes[[x]][[y]]$L_CH4
+  L_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function (x) {
+    L_peatland_a <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      L <- L_CO2_peatland[[x]][[y]]
+      L$L_CH4 <- L_CH4_peatland[[x]][[y]]$L_CH4
       return(L)
     })
-    names(L_microbes_a) <- names(L_CO2_microbes[[x]])
-    return(L_microbes_a)
+    names(L_peatland_a) <- names(L_CO2_peatland[[x]])
+    return(L_peatland_a)
   })
 
-  names(L_microbes) <- names(A_harv)
+  names(L_peatland) <- names(A_harv)
 
-  return(L_microbes)
+  return(L_peatland)
 }

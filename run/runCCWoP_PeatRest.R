@@ -64,16 +64,6 @@ p_L_forest[[1]]
 p_L_forest[[2]]
 
 ################################################################################
-########################### Bog plant sequestration ############################
-################################################################################
-
-# S_bog_plants <- Bog_plant_sequestration_RM(core.dat,
-                                           # forestry.dat)
-
-# p_S_bog_plants <- plotS_bog_plants(S_bog_plants)
-# p_S_bog_plants
-
-################################################################################
 ########################## Emissions rates from soils ##########################
 ################################################################################
 
@@ -84,18 +74,18 @@ R_tot <- Emissions_rates_soils_RM(core.dat = core.dat,
 ############################### Loss of Soil CO2 ###############################
 ################################################################################
 
-L_microbes <- CO2_loss_restoration(core.dat = core.dat,
+L_peatland <- CO2_loss_restoration(core.dat = core.dat,
                                    R_tot = R_tot)
 
-p_L_microbes <- plotL_microbes(L_microbes)
-p_L_microbes
+p_L_peatland <- plotL_peatland(L_peatland)
+p_L_peatland
 
 ################################################################################
 ######################### CO2 loss by DOC and POC loss #########################
 ################################################################################
 
 L_DPOC <- CO2_loss_DOC_POC_RM(core.dat = core.dat,
-                              L_microbes = L_microbes)
+                              L_peatland = L_peatland)
 
 p_L_DPOC <- plotL_DPOC(L_DPOC)
 p_L_DPOC
@@ -106,9 +96,8 @@ p_L_DPOC
 
 LCA <- Carbon_payback_time(S_forest,
                            R_tot_forestry,
-                           S_bog_plants,
                            L_forest,
-                           L_microbes,
+                           L_peatland,
                            L_DPOC)
 LCA
 
@@ -163,7 +152,7 @@ dev.off()
 
 png("../Figures/LCA implementation/V2/L_peatland.png",
     width=ww, height=hh, units="cm", res=300)
-p_L_microbes
+p_L_peatland
 dev.off()
 
 png("../Figures/LCA implementation/V2/L_DPOC.png",

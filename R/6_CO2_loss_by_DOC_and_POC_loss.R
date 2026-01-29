@@ -76,6 +76,7 @@ CO2_loss_DOC_POC <- function(core.dat,
 
 #' CO2_loss_DOC_POC
 #' @param core.dat UI data
+#' @param L_peatland Peatland emissions object
 #' @param pC_DOC estimated percent of total carbon losses lost as DOC
 #' @param pDOC_CO2 percent DOC ultimately lost as CO2
 #' @param pC_POC estimated percent of total carbon losses lost as POC
@@ -83,7 +84,7 @@ CO2_loss_DOC_POC <- function(core.dat,
 #' @return L_DPOC
 #' @export
 CO2_loss_DOC_POC_RM <- function(core.dat,
-                                L_microbes,
+                                L_peatland,
                                 pC_DOC = c(Exp = 26, Min = 7, Max = 40),
                                 pDOC_CO2 = 100,
                                 pC_POC = c(Exp = 8, Min = 4, Max = 10),
@@ -96,18 +97,18 @@ CO2_loss_DOC_POC_RM <- function(core.dat,
   # pC_CH4 <- 0.75 # proportion of molecular weight of CH4 that is Carbon (12/16)
 
   # Total gaseous carbon losses due to microbial metabolism IN UNITS CO2 eq.
-  L_C_Tot <- lapply(seq_along(L_microbes), FUN = function(x) {
-    res <- lapply(seq_along(L_microbes[[x]]), FUN = function(y) {
-      df <- L_microbes[[x]][[y]]
+  L_C_Tot <- lapply(seq_along(L_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_peatland[[x]]), FUN = function(y) {
+      df <- L_peatland[[x]][[y]]
       df <- df %>%
         mutate(L_C = L_CO2 + L_CH4) %>%
         select(t, L_C)
     })
-    names(res) <- names(L_microbes[[x]])
+    names(res) <- names(L_peatland[[x]])
     return(res)
   })
 
-  names(L_C_Tot) <- names(L_microbes)
+  names(L_C_Tot) <- names(L_peatland)
 
   # Compute D/POC loss via empirically estimated ratios to total gaseous loss
   L_DPOC <- lapply(seq_along(L_C_Tot), FUN = function(x) {

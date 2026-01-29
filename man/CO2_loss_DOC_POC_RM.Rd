@@ -6,7 +6,7 @@
 \usage{
 CO2_loss_DOC_POC_RM(
   core.dat,
-  L_microbes,
+  L_peatland,
   pC_DOC = c(Exp = 26, Min = 7, Max = 40),
   pDOC_CO2 = 100,
   pC_POC = c(Exp = 8, Min = 4, Max = 10),
@@ -15,6 +15,8 @@ CO2_loss_DOC_POC_RM(
 }
 \arguments{
 \item{core.dat}{UI data}
+
+\item{L_peatland}{Peatland emissions object}
 
 \item{pC_DOC}{estimated percent of total carbon losses lost as DOC}
 

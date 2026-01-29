@@ -113,7 +113,7 @@ Height of turbines (m),H_turb,Windfarm,forestry
 Average site windspeed (m s-1),Vwind_site,Windfarm,forestry
 Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
 Emissions due to forestry/restoration operations,NA,Emissions,forestry
-Emissions from felling (g CO2 m-3),E_harv,Emissions,forestry
+Emissions from felling (kg CO2 m-3),E_harv,Emissions,forestry
 Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
 Emissions from mulching (kg CO2 ha-1),E_mulch,Emissions,forestry
 Emissions from damming (kg CO2 ha-1),E_dam,Emissions,forestry
@@ -164,10 +164,8 @@ Age of seedlings on planting (yr),t_seedling_replant,Area.1,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.1,forestry
 Peatland restoration,NA,Area.1,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.1,forestry
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.1,forestry
-Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.1,forestry
-Shape parameter for restoration of microbial community function,n_restore_microbes,Area.1,forestry
-Shape parameter for restoration of plant community function,n_restore_plants,Area.1,forestry
+Time to restoration of peatland ecosystem function (yr),t_restore_peatland,Area.1,forestry
+Shape parameter for restoration of peatland ecosystem function,n_restore_peatland,Area.1,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.1,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.1,forestry
 Management interventions,NA,Area.1,forestry
@@ -217,10 +215,8 @@ Age of seedlings on planting (yr),t_seedling_replant,Area.2,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.2,forestry
 Peatland restoration,NA,Area.2,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.2,forestry
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.2,forestry
-Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.2,forestry
-Shape parameter for restoration of microbial community function,n_restore_microbes,Area.2,forestry
-Shape parameter for restoration of plant community function,n_restore_plants,Area.2,forestry
+Time to restoration of peatland ecosystem function (yr),t_restore_peatland,Area.2,forestry
+Shape parameter for restoration of peatland ecosystem function,n_restore_peatland,Area.2,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.2,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.2,forestry
 Management interventions,NA,Area.2,forestry
@@ -270,10 +266,8 @@ Age of seedlings on planting (yr),t_seedling_replant,Area.3,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.3,forestry
 Peatland restoration,NA,Area.3,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.3,forestry
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.3,forestry
-Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.3,forestry
-Shape parameter for restoration of microbial community function,n_restore_microbes,Area.3,forestry
-Shape parameter for restoration of plant community function,n_restore_plants,Area.3,forestry
+Time to restoration of peatland ecosystem function (yr),t_restore_peatland,Area.3,forestry
+Shape parameter for restoration of peatland ecosystem function,n_restore_peatland,Area.3,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.3,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.3,forestry
 Management interventions,NA,Area.3,forestry
@@ -323,10 +317,8 @@ Age of seedlings on planting (yr),t_seedling_replant,Area.4,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.4,forestry
 Peatland restoration,NA,Area.4,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.4,forestry
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.4,forestry
-Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.4,forestry
-Shape parameter for restoration of microbial community function,n_restore_microbes,Area.4,forestry
-Shape parameter for restoration of plant community function,n_restore_plants,Area.4,forestry
+Time to restoration of peatland ecosystem function (yr),t_restore_peatland,Area.4,forestry
+Shape parameter for restoration of peatland ecosystem function,n_restore_peatland,Area.4,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.4,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.4,forestry
 Management interventions,NA,Area.4,forestry
@@ -376,10 +368,8 @@ Age of seedlings on planting (yr),t_seedling_replant,Area.5,forestry
 Area replanted around each turbine (ha),A_replant_turb,Area.5,forestry
 Peatland restoration,NA,Area.5,forestry
 Fallow period between harvesting of forestry and restoration of peatland hydrology (yr),t_fallow,Area.5,forestry
-Time to restoration of microbial community function (CO2 and CH4 emissions) (yr),t_restore_microbes,Area.5,forestry
-Time to restoration of bog plant community function (CO2 sequestration) (yr),t_restore_plants,Area.5,forestry
-Shape parameter for restoration of microbial community function,n_restore_microbes,Area.5,forestry
-Shape parameter for restoration of plant community function,n_restore_plants,Area.5,forestry
+Time to restoration of peatland ecosystem function (yr),t_restore_peatland,Area.5,forestry
+Shape parameter for restoration of peatland ecosystem function,n_restore_peatland,Area.5,forestry
 Pre-restoration water table depth (m),d_wt_drained,Area.5,forestry
 Expected post-restoration water table depth (m),d_wt_restored,Area.5,forestry
 Management interventions,NA,Area.5,forestry

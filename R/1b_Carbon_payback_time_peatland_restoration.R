@@ -3,17 +3,15 @@
 #' Carbon_payback_time
 #' @param S_forest Forest sequestration
 #' @param R_tot_forestry Emissions from soils under forestry
-#' @param S_bog_plants bog plant sequestration
 #' @param L_forest Forest product losses
-#' @param L_microbes Emissions from peatland
+#' @param L_peatland Emissions from peatland
 #' @param L_DPOC D/POC losses
 #' @return Total peatland restoration carbon accounting
 #' @export
 Carbon_payback_time <- function(S_forest,
                                 R_tot_forestry,
-                                S_bog_plants,
                                 L_forest,
-                                L_microbes,
+                                L_peatland,
                                 L_DPOC) {
 
   # THIS FUNCTION..
@@ -36,23 +34,9 @@ Carbon_payback_time <- function(S_forest,
 
   names(S_forest_CO2) <- names(S_forest)
 
-  S_bog_plants_CO2 <- lapply(seq_along(S_bog_plants), FUN = function(x) {
-    res <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
-      S <- S_bog_plants[[x]][[y]]
-      S <- S %>%
-        mutate(S_bog_plants = S_bog_plants * CO2_C)
-      return(S)
-    })
-    names(res) <- names(S_bog_plants[[x]])
-    return(res)
-  })
-
-  names(S_bog_plants_CO2) <- names(S_bog_plants)
-
   ## Extract dataframes from list objects
   S_forest_df <- getDf1(S_forest_CO2)
-  S_bog_plants_df <- getDf1(S_bog_plants_CO2)
-  L_microbes_df <- getDf2(L_microbes)
+  L_peatland_df <- getDf2(L_peatland)
   L_DPOC_df <- getDf2(L_DPOC)
   L_forest_df <- getDf3(L_forest)
   L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
@@ -61,16 +45,14 @@ Carbon_payback_time <- function(S_forest,
 
   S_forest_df$treatment <- "CF"
   L_forest_soils_df$treatment <- "CF"
-  S_bog_plants_df$treatment <- "PR"
-  L_microbes_df$treatment <- "PR"
+  L_peatland_df$treatment <- "PR"
   L_DPOC_df$treatment <- "PR"
   L_forest_df$treatment <- "PR"
 
   ## Merge dataframes
   res <- rbind(S_forest_df,
-               #S_bog_plants_df, # apparently this is accounted for in the emissions sub-model...
                L_forest_soils_df,
-               L_microbes_df,
+               L_peatland_df,
                L_DPOC_df,
                L_forest_df)
 

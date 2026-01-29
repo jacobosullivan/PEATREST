@@ -4,25 +4,16 @@
 \alias{Carbon_payback_time}
 \title{Carbon_payback_time}
 \usage{
-Carbon_payback_time(
-  S_forest,
-  R_tot_forestry,
-  S_bog_plants,
-  L_forest,
-  L_microbes,
-  L_DPOC
-)
+Carbon_payback_time(S_forest, R_tot_forestry, L_forest, L_peatland, L_DPOC)
 }
 \arguments{
 \item{S_forest}{Forest sequestration}
 
 \item{R_tot_forestry}{Emissions from soils under forestry}
 
-\item{S_bog_plants}{bog plant sequestration}
-
 \item{L_forest}{Forest product losses}
 
-\item{L_microbes}{Emissions from peatland}
+\item{L_peatland}{Emissions from peatland}
 
 \item{L_DPOC}{D/POC losses}
 }
