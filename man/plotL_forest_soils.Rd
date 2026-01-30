@@ -4,10 +4,10 @@
 \alias{plotL_forest_soils}
 \title{plotR_tot_forestry}
 \usage{
-plotL_forest_soils(L_forest_soils)
+plotL_forest_soils(res)
 }
 \arguments{
-\item{plotL_forest_soils}{Emissions rates from soil under trees}
+\item{res}{LCA output}
 }
 \value{
 plot

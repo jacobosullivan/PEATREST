@@ -1,105 +1,17 @@
-#' getDf1
-#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
-#' @return dataframe
-#' @export
-getDf1 <- function(list_ob) {
-  list_ob_df <- bind_rows(lapply(seq_along(list_ob), FUN = function(x) {
-    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
-      df <- list_ob[[x]][[y]]
-      df$source <- colnames(df)[2]
-      colnames(df)[2] <- "value"
-      df <- df[,c(1,3,2)]
-      df$Area <- names(list_ob)[x]
-      df$Est <- names(list_ob[[x]])[y]
-      return(df)
-    })
-    return(res)
-  }))
-
-  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
-
-  return(list_ob_df)
-}
-
-#' getDf2
-#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
-#' @return dataframe
-#' @export
-getDf2 <- function(list_ob) {
-  list_ob_df <- bind_rows(lapply(seq_along(list_ob), FUN = function(x) {
-    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
-      df <- list_ob[[x]][[y]] %>%
-        pivot_longer(cols = starts_with(c("L_")),
-                     names_to = "source")
-      df$Area <- names(list_ob)[x]
-      df$Est <- names(list_ob[[x]])[y]
-      return(df)
-    })
-    return(res)
-  }))
-
-  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
-
-  return(list_ob_df)
-}
-
-#' getDf3
-#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
-#' @return dataframe
-#' @export
-getDf3 <- function(list_ob) {
-  # For e.g. L_forest (multi-source output)
-  list_ob_df <- lapply(seq_along(list_ob), FUN = function(x) {
-    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
-      res2 <- lapply(seq_along(list_ob[[x]][[y]]), FUN = function(z) {
-        df <- as.data.frame(unname(list_ob[[x]][[y]][z])) %>%
-          pivot_longer(cols = starts_with(c("L_", "S_")),
-                       names_to = "source")
-        df$Area <- names(list_ob)[x]
-        df$Est <- names(list_ob[[x]][[y]])[z]
-        return(df)
-      })
-      return(res2)
-    })
-    return(res)
-  })
-
-  list_ob_df <- bind_rows(unlist(list_ob_df, recursive = F))
-  list_ob_df <- list_ob_df %>%
-    mutate(value = ifelse(value==0, NA, value))
-  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
-
-  return(list_ob_df)
-}
-
 #' plotS_forest
-#' @param S_forest Forest sequestration output
+#' @param res LCA output
 #' @return plot
 #' @export
-plotS_forest <- function(S_forest) {
+plotS_forest <- function(res) {
 
-  # First convert C sequestration into units CO2
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  S_forest_CO2 <- lapply(seq_along(S_forest), FUN = function(x) {
-    res <- lapply(seq_along(S_forest[[x]]), FUN = function(y) {
-      S <- S_forest[[x]][[y]]
-      S <- S %>%
-        select(t, NPP) %>%
-        rename(S_forest = NPP) %>%
-        mutate(S_forest = S_forest * CO2_C)
-      return(S)
-    })
-    names(res) <- names(S_forest[[x]])
-    return(res)
-  })
+  # THIS FUNCTION...
 
-  names(S_forest_CO2) <- names(S_forest)
+  df <- res %>%
+    filter(model == "Tree_growth")
 
-  S_forest_df <- getDf1(S_forest_CO2)
-
-  p <- ggplot(S_forest_df, aes(x=t, y=value)) +
+  p <- ggplot(df, aes(x=t, y=value)) +
     geom_line(col="green3") +
-    scale_x_continuous(limits = c(min(S_forest_df$t), 200)) +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2 eq.]", linetype="", title="Forestry sequestration (3PG)")
@@ -107,31 +19,62 @@ plotS_forest <- function(S_forest) {
   return(p)
 }
 
-#' plotL_forest
-#' @param L_forest Harvested forest losses output
+#' plotR_tot_forestry
+#' @param res LCA output
 #' @return plot
 #' @export
-plotL_forest <- function(L_forest) {
+plotL_forest_soils <- function(res) {
 
-  L_forest_df <- getDf3(L_forest)
+  # THIS FUNCTION...
 
-  L_forest_df$sink <- -1
-  L_forest_df$sink[grep("S_", L_forest_df$source)] <- 1
-  L_forest_df$discrete <- 0
-  L_forest_df$discrete[L_forest_df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_Biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_Biofuel")] <- 1
-  L_forest_df <- L_forest_df %>%
+  df <- res %>%
+    filter(model == "Forest_soils")
+
+  coeff <- 20
+
+  df <- bind_rows(lapply(df, FUN = bind_rows)) %>%
+    mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))
+
+  p <- ggplot(df, aes(x=t)) +
+    geom_line(aes(y=value, col=source)) +
+    geom_line(aes(y=d_wt*coeff), col="grey") +
+    scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
+                       sec.axis = sec_axis(~./coeff, name = "Water table depth (m)")) +
+    scale_x_continuous(limits=c(NA, 100)) +
+    geom_vline(xintercept = 0, linetype=3) +
+    facet_grid(Est ~ Area) +#, scales="free_y") +
+    theme_bw() +
+    theme(axis.title.y.right = element_text(color = "grey")) +
+    labs(x = "Time (yr)", col="", title="Emissions from soils under trees")
+  return(p)
+}
+
+#' plotL_forest
+#' @param res LCA output
+#' @return plot
+#' @export
+plotL_forest <- function(res) {
+
+  # THIS FUNCTION ...
+
+  df <- res %>%
+    filter(model == "Management")
+
+  df$discrete <- 0
+  df$discrete[df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_Biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_Biofuel")] <- 1
+  df <- df %>%
     mutate(value = ifelse(value==0, NA, value))
 
-  p1 <- ggplot(L_forest_df %>% filter(discrete == 0), aes(x=t, y=value*sink, col=factor(source))) +
+  p1 <- ggplot(df %>% filter(discrete == 0), aes(x=t, y=value, col=factor(source))) +
     geom_line() +
     scale_x_continuous(limits = c(0, 50)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Decay emissions [tCO2]", col="", title="Forestry biomass decay emissions")
 
-  source_l <- sort(unique((L_forest_df %>% filter(discrete == 1))$source))
+  source_l <- sort(unique((df %>% filter(discrete == 1))$source))
   source_l <- c("L_Biofuel", source_l[source_l != "L_Biofuel"])
-  p2 <- ggplot(L_forest_df %>%
+  p2 <- ggplot(df %>%
                  filter(discrete == 1) %>%
                  mutate(source = factor(source, levels = source_l)),
                aes(x=factor(source), y=value, col=factor(source))) +
@@ -146,60 +89,30 @@ plotL_forest <- function(L_forest) {
   return(list(p1, p2))
 }
 
-#' plotS_bog_plants
-#' @param S_bog_plants BOg plant sequestration output
-#' @return plot
-#' @export
-plotS_bog_plants <- function(S_bog_plants) {
-
-  # First convert C sequestration into units CO2
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  S_bog_plants_CO2 <- lapply(seq_along(S_bog_plants), FUN = function(x) {
-    res <- lapply(seq_along(S_bog_plants[[x]]), FUN = function(y) {
-      S <- S_bog_plants[[x]][[y]]
-      S <- S %>%
-        mutate(S_bog_plants = S_bog_plants * CO2_C)
-      return(S)
-    })
-    names(res) <- names(S_bog_plants[[x]])
-    return(res)
-  })
-
-  names(S_bog_plants_CO2) <- names(S_bog_plants)
-
-  S_bog_plants_df <- getDf1(S_bog_plants_CO2)
-
-  p <- ggplot(S_bog_plants_df, aes(x=t, y=value)) +
-    geom_line(col="red3") +
-    scale_x_continuous(limits = c(min(S_bog_plants_df$t), 200)) +
-    facet_grid(Est ~ Area, scales="free_y") +
-    theme_bw() +
-    labs(x="Time since harvesting [y]", y="Bog plant sequestration [tCO2 eq.]", linetype="", title="Bog plant sequestration")
-
-  return(p)
-}
-
 #' plotL_peatland
-#' @param L_peatland Microbial emissions output
+#' @param res LCA output
 #' @return plot
 #' @export
-plotL_peatland <- function(L_peatland) {
+plotL_peatland <- function(res) {
 
 
-  L_peatland_df <- getDf2(L_peatland)
+  # THIS FUNCTION ...
 
-  L_peatland_df <- bind_rows(L_peatland_df,
-                             L_peatland_df %>%
-                               group_by(t, Area, Est) %>%
-                               summarise(value=sum(value)) %>%
-                               mutate(source = "L_tot")) %>%
-                   arrange(t, Area, Est)
+  df <- res %>%
+    filter(model == "Peatland")
 
-  p <- ggplot(L_peatland_df %>%
+  df <- bind_rows(df,
+                  df %>%
+                    group_by(t, Area, Est) %>%
+                    summarise(value=sum(value)) %>%
+                    mutate(source = "L_tot")) %>%
+    arrange(t, Area, Est)
+
+  p <- ggplot(df %>%
                 mutate(source = factor(source, levels = c("L_tot", "L_CO2", "L_CH4"))),
               aes(x=t, y=value, linetype=factor(source))) +
     geom_line(col="red3") +
-    scale_x_continuous(limits = c(min(L_peatland_df$t), 200)) +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="Peatland emissions [tCO2 eq.]", linetype="", title="Peatland emissions")
@@ -208,19 +121,22 @@ plotL_peatland <- function(L_peatland) {
 }
 
 #' plotL_DPOC
-#' @param L_DPOC D/POC losses output
+#' @param res LCA output
 #' @return plot
 #' @export
-plotL_DPOC <- function(L_DPOC) {
+plotL_DPOC <- function(res) {
 
 
-  L_DPOC_df <- getDf2(L_DPOC)
+  # THIS FUNCTION ...
 
-  p <- ggplot(L_DPOC_df %>%
+  df <- res %>%
+    filter(model == "Aq_carbon")
+
+  p <- ggplot(df %>%
                 mutate(source = factor(source, levels = c("L_DOC", "L_POC"))),
               aes(x=t, y=value, linetype=factor(source))) +
     geom_line(col="red3") +
-    scale_x_continuous(limits = c(min(L_DPOC_df$t), 200)) +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
     facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
     labs(x="Time since harvesting [y]", y="D/POC losses [tCO2 eq.]", linetype="", title="DOC and POC losses")
@@ -228,29 +144,100 @@ plotL_DPOC <- function(L_DPOC) {
   return(p)
 }
 
-#' plotR_tot_forestry
-#' @param plotL_forest_soils Emissions rates from soil under trees
+#' plotLCA
+#' @param res LCA output
 #' @return plot
 #' @export
-plotL_forest_soils <- function(L_forest_soils) {
+plotLCA <- function(res, sum_areas=T) {
 
-  coeff <- 20
+  # THIS FUNCTION..
 
-  L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
-    mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))
+  if (sum_areas) {
+    res_sum <- res %>%
+      group_by(treatment, t, Est) %>%
+      summarise(value = sum(value)) %>%
+      mutate(Area = "All.areas")
+  } else {
+    res_sum <- res %>%
+      group_by(treatment, Area, t, Est) %>%
+      summarise(value = sum(value))
+  }
 
-  p <- ggplot(L_forest_soils_df, aes(x=t)) +
-    geom_line(aes(y=value, col=source)) +
-    geom_line(aes(y=d_wt*coeff), col="grey") +
-    scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
-                       sec.axis = sec_axis(~./coeff, name = "Water table depth (m)")) +
-    scale_x_continuous(limits=c(NA, 100)) +
-    geom_vline(xintercept = 0, linetype=3) +
-    facet_grid(Est ~ Area) +#, scales="free_y") +
+  t_flux <- left_join(res_sum %>%
+                        ungroup() %>%
+                        filter(treatment=="CF") %>%
+                        select(-c(treatment)) %>%
+                        rename(CF = value),
+                      res_sum %>%
+                        ungroup() %>%
+                        filter(treatment=="PR") %>%
+                        select(-c(treatment)) %>%
+                        rename(PR = value),
+                      by=c("Area", "t", "Est")) %>%
+    mutate(dif = PR-CF) %>%
+    filter(dif >= 0 & !is.na(dif)) %>%
+    group_by(Area, Est) %>%
+    summarise(t = min(t))
+
+  p <- ggplot(res_sum, aes(x=t, y=value, col=treatment)) +
+    geom_line() +
+    scale_x_continuous(limits = c(NA, 200)) +
+    geom_vline(data=t_flux, aes(xintercept = t)) +
+    facet_grid(Est ~ Area, scales="free_y") +
     theme_bw() +
-    theme(axis.title.y.right = element_text(color = "grey")) +
-    labs(x = "Time (yr)", col="", title="Emissions from soils under trees")
+    labs(x="Time since harvesting [y]", y="Carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
+
   return(p)
 }
 
+#' plotLCA
+#' @param res LCA output
+#' @return plot
+#' @export
+plotLCA_cs <- function(res, sum_areas=T) {
+
+  # THIS FUNCTION..
+
+  if (sum_areas) {
+    res_sum <- res %>%
+      group_by(treatment, t, Est) %>%
+      summarise(value = sum(value)) %>%
+      mutate(Area = "All.areas")
+  } else {
+    res_sum <- res %>%
+      group_by(treatment, Area, t, Est) %>%
+      summarise(value = sum(value))
+  }
+
+  res_cs <- res_sum %>%
+    filter(t >= 0) %>%
+    group_by(treatment, Est, Area) %>%
+    mutate(value_cs = cumsum(value))
+
+  t_payback <- left_join(res_cs %>%
+                           ungroup() %>%
+                           filter(treatment=="CF") %>%
+                           select(-c(treatment,value)) %>%
+                           rename(CF_cs = value_cs),
+                         res_cs %>%
+                           ungroup() %>%
+                           filter(treatment=="PR") %>%
+                           select(-c(treatment,value)) %>%
+                           rename(PR_cs = value_cs),
+                         by=c("Area", "t", "Est")) %>%
+    mutate(dif_cs = PR_cs-CF_cs) %>%
+    filter(dif_cs >= 0) %>%
+    group_by(Area, Est) %>%
+    summarise(t = min(t))
+
+
+  p <- ggplot(res_cs %>% filter(t <= 100), aes(x=t, y=value_cs, col=treatment)) +
+      geom_line() +
+      geom_vline(data=t_payback, aes(xintercept = t)) +
+      facet_grid(Est ~ Area, scales="free_y") +
+      theme_bw() +
+      labs(x="Time since harvesting [y]", y="Cummulative carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
+
+  return(p)
+}
 

@@ -4,10 +4,10 @@
 \alias{plotL_peatland}
 \title{plotL_peatland}
 \usage{
-plotL_peatland(L_peatland)
+plotL_peatland(res)
 }
 \arguments{
-\item{L_peatland}{Microbial emissions output}
+\item{res}{LCA output}
 }
 \value{
 plot

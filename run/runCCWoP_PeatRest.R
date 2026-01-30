@@ -94,12 +94,17 @@ p_L_DPOC
 ######################### CO2 payback time estimation ##########################
 ################################################################################
 
-LCA <- Carbon_payback_time(S_forest,
-                           R_tot_forestry,
-                           L_forest,
-                           L_peatland,
-                           L_DPOC)
-LCA
+res <- getCarbonDf(S_forest,
+                   R_tot_forestry,
+                   L_forest,
+                   L_peatland,
+                   L_DPOC)
+
+t_payback <- Carbon_payback_time(res, sum_areas = F)
+
+pLCA <- plotLCA(res, sum_areas = F)
+pLCA_cs <- plotLCA_cs(res, sum_areas = F)
+
 
 ################################################################################
 ################################# Save plots ###################################

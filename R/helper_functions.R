@@ -65,3 +65,148 @@ rest_dyn_mod <- function(t,n,ymin,ymax,convThresh=0.99) {
 
   return(rate)
 }
+
+#' getDf1
+#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
+#' @return dataframe
+#' @export
+getDf1 <- function(list_ob) {
+  list_ob_df <- bind_rows(lapply(seq_along(list_ob), FUN = function(x) {
+    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
+      df <- list_ob[[x]][[y]]
+      df$source <- colnames(df)[2]
+      colnames(df)[2] <- "value"
+      df <- df[,c(1,3,2)]
+      df$Area <- names(list_ob)[x]
+      df$Est <- names(list_ob[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
+
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
+
+  return(list_ob_df)
+}
+
+#' getDf2
+#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
+#' @return dataframe
+#' @export
+getDf2 <- function(list_ob) {
+  list_ob_df <- bind_rows(lapply(seq_along(list_ob), FUN = function(x) {
+    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
+      df <- list_ob[[x]][[y]] %>%
+        pivot_longer(cols = starts_with(c("L_")),
+                     names_to = "source")
+      df$Area <- names(list_ob)[x]
+      df$Est <- names(list_ob[[x]])[y]
+      return(df)
+    })
+    return(res)
+  }))
+
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
+
+  return(list_ob_df)
+}
+
+#' getDf3
+#' @param list_ob output of intermediate calculations in nested list format (Area, Exp/Min/Max)
+#' @return dataframe
+#' @export
+getDf3 <- function(list_ob) {
+  # For e.g. L_forest (multi-source output)
+  list_ob_df <- lapply(seq_along(list_ob), FUN = function(x) {
+    res <- lapply(seq_along(list_ob[[x]]), FUN = function(y) {
+      res2 <- lapply(seq_along(list_ob[[x]][[y]]), FUN = function(z) {
+        df <- as.data.frame(unname(list_ob[[x]][[y]][z])) %>%
+          pivot_longer(cols = starts_with(c("L_", "S_")),
+                       names_to = "source")
+        df$Area <- names(list_ob)[x]
+        df$Est <- names(list_ob[[x]][[y]])[z]
+        return(df)
+      })
+      return(res2)
+    })
+    return(res)
+  })
+
+  list_ob_df <- bind_rows(unlist(list_ob_df, recursive = F))
+  list_ob_df <- list_ob_df %>%
+    mutate(value = ifelse(value==0, NA, value))
+  list_ob_df <- list_ob_df[complete.cases(list_ob_df),]
+
+  return(list_ob_df)
+}
+
+#' getCarbonDf
+#' @param S_forest Forest sequestration
+#' @param R_tot_forestry Emissions from soils under forestry
+#' @param L_forest Forest product losses
+#' @param L_peatland Emissions from peatland
+#' @param L_DPOC D/POC losses
+#' @return Total peatland restoration carbon accounting dataframe
+#' @export
+getCarbonDf <- function(S_forest,
+                        R_tot_forestry,
+                        L_forest,
+                        L_peatland,
+                        L_DPOC) {
+
+  # Get forest sequestration (units CO2)
+  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  S_forest_CO2 <- lapply(seq_along(S_forest), FUN = function(x) {
+    res <- lapply(seq_along(S_forest[[x]]), FUN = function(y) {
+      S <- S_forest[[x]][[y]]
+      S <- S %>%
+        select(t, NPP) %>%
+        rename(S_forest = NPP) %>%
+        mutate(S_forest = S_forest * CO2_C)
+      return(S)
+    })
+    names(res) <- names(S_forest[[x]])
+    return(res)
+  })
+
+  names(S_forest_CO2) <- names(S_forest)
+
+  S_forest_df <- getDf1(S_forest_CO2)
+  S_forest_df$model <- "Tree_growth"
+  S_forest_df$treatment <- "CF"
+
+  # Get forest soils emissions
+  L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
+    select(t, source, value, Area, Est)
+  L_forest_soils_df$model <- "Forest_soils"
+  L_forest_soils_df$treatment <- "CF"
+
+  # Get silvicuture/restoration emissions
+  L_forest_df <- getDf3(L_forest)
+  L_forest_df$model <- "Management"
+  L_forest_df$treatment <- "PR"
+
+  # Get peatland emissions
+  L_peatland_df <- getDf2(L_peatland)
+  L_peatland_df$model <- "Peatland"
+  L_peatland_df$treatment <- "PR"
+
+  # Get D/POC losses
+  L_DPOC_df <- getDf2(L_DPOC)
+  L_DPOC_df$model <- "Aq_carbon"
+  L_DPOC_df$treatment <- "PR"
+
+  res <- bind_rows(S_forest_df,
+                   L_forest_soils_df,
+                   L_forest_df,
+                   L_peatland_df,
+                   L_DPOC_df)
+
+  res <- res %>%
+    filter(!is.na(value) & value != 0) %>%
+    mutate(value = ifelse(grepl("L_", source), -value, value)) %>%
+    select(model,treatment,t,Area,Est,source,value)
+
+  return(res)
+}
+

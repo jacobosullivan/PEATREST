@@ -4,10 +4,10 @@
 \alias{plotL_forest}
 \title{plotL_forest}
 \usage{
-plotL_forest(L_forest)
+plotL_forest(res)
 }
 \arguments{
-\item{L_forest}{Harvested forest losses output}
+\item{res}{LCA output}
 }
 \value{
 plot

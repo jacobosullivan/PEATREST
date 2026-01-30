@@ -496,12 +496,8 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
   CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
 
-  # Volume explored by 1kg of root biomass set to a preliminary value that keeps d_wt <1m as observed
-  # Need to find an actual estimate for this or tune to fit some data
-  # DO NOT set lower that 0.1 as it leads to fitting errors in the nls.
-  # Increasing increases the rate of the logistic increase in root depth to maximum but obviously not the asymptote so outcomes are not very sensitive to this value
-  sigma_zR <- c(Scots_pine = 0.1,
-                Sitka_spruce = 0.05) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
+  sigma_zR <- c(Scots_pine = 0.12,
+                Sitka_spruce = 0.06) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
 
   # Extract inputs for easy access
   em_factor_meth_in <- core.dat$Em.factor.meth$em_factor_meth_in # Select IPCC default or ECOSSE model
@@ -516,17 +512,12 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   species <- c("Scots_pine", "Sitka_spruce")
   soil_type <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "soil_type")
 
-  # Rooting depth estimates from https://cdn.forestresearch.gov.uk/1967/03/fcbu040.pdf
-  # Ideally use more recent data with YC component for this!
-  d_root_peaty_gley <- 0.42
-  d_root_deep_peat <- 0.66
+  # Rooting depth estimates from analysis of tree pulling data
+  # no indication of significant relationship to YC, though replication is low after subsetting by appropriate soil types
+  d_root_max <- 0.618
 
   d_root <- lapply(seq_along(d_peat), FUN = function(x) {
-    if (soil_type[[x]][1]) { # Peaty gley selected
-      d_root_a <- c(Exp = d_root_peaty_gley, Min = d_root_peaty_gley, Max = d_root_peaty_gley)
-    } else { # Deep peat selected
-      d_root_a <- c(Exp = d_root_deep_peat, Min = d_root_deep_peat, Max = d_root_deep_peat)
-    }
+    d_root_a <- c(Exp = d_root_max, Min = d_root_max, Max = d_root_max)
   })
 
   names(d_root) <- names(d_peat)
@@ -552,17 +543,7 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
         mutate(V_r = B_r * sigma_zR[Spp_a],
                d_wt = V_r/10000,
                YC = YC_a0,
-               YC_avail = YC_a) #%>%
-        # mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
-        # mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
-
-      # res <- rbind(data.frame(Age = 0:(min(res$Age)-1),
-      #                         B_r = 0,
-      #                         V_r = 0,
-      #                         d_wt = unname(d_drain[[x]][y]),
-      #                         YC = unname(YC_a0),
-      #                         YC_avail = YC_a),
-      #              res)
+               YC_avail = YC_a)
 
       res$Area <- names(YC)[x]
 
@@ -580,34 +561,14 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
 
       YC_a <- unique(d_wt[[x]]$YC)[y]
 
-      logist.fit <- F
-      if (logist.fit) { # logistic fit
-        # fit <- nls(
-        #   d_wt ~ min(d_peat[[x]][y], d_root[[x]][y]) / (1 + exp(-k * (Age - x0))),
-        #   data = d_wt[[x]] %>% filter(YC==YC_a),
-        #   start = list(k = 1, # growth rate
-        #                x0 = 50), # midpoint
-        #   control = nls.control(maxiter = 100, warnOnly = TRUE)
-        fit <- nls(
-          d_wt ~ min(d_peat[[x]][y], d_root[[x]][y]) / (1 + ((min(d_peat[[x]][y], d_root[[x]][y]) - d_drain[[x]][y])/d_drain[[x]][y]) * exp(-k * (Age - x0))),
-          data = d_wt[[x]] %>% filter(YC==YC_a),
-          start = list(k = 1, # growth rate
-                       x0 = 50), # midpoint
-          control = nls.control(maxiter = 100, warnOnly = TRUE)
-        )
-
-      } else { # linear fit
-        fit <- lm(d_wt ~ Age, data = d_wt[[x]] %>% filter(YC==YC_a))
-      }
+      fit <- lm(d_wt ~ Age, data = d_wt[[x]] %>% filter(YC==YC_a))
 
       Age_pred <- 0:(500+t_harv[[x]][y])
       pred <- data.frame(Age = Age_pred)
       pred$Area = names(YC)[x]
       pred$YC = YC[[x]][y]
       pred$YC_avail = unique(d_wt[[x]]$YC)[y]
-      # pred$YC = unique(d_wt[[x]]$YC)[y]
       pred$d_wt <- predict(fit, newdata = pred)
-
 
       if (0) {
         ggplot(d_wt[[x]] %>% filter(YC==YC_a),
@@ -616,13 +577,10 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
           geom_line(data=pred)
       }
 
-      if (!logist.fit) {
-        pred <- pred %>%
-          mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
-          mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
-      }
+      pred <- pred %>%
+        mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
+        mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
 
-      # return(df)
       return(pred)
     })
     names(d_wt_pred_a) <- names(YC[[x]])
@@ -938,30 +896,37 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
     L_tot[[i]] <- list(Exp = left_join(R_CO2_dry[[i]]$Exp,
                                        R_CH4_dry[[i]]$Exp,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
-                         mutate(R_tot = R_CO2 + R_CH4) %>%
-                         mutate(L_tot = R_tot * A_harv[[i]][1],
+                         # mutate(R_tot = R_CO2 + R_CH4) %>%
+                         mutate(#L_tot = R_tot * A_harv[[i]][1],
                                 L_CO2 = R_CO2 * A_harv[[i]][1],
                                 L_CH4 = R_CH4 * A_harv[[i]][1]) %>%
-                         select(-c(R_tot, R_CO2, R_CH4)) %>%
-                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
+                         # select(-c(R_tot, R_CO2, R_CH4)) %>%
+                         select(-c(R_CO2, R_CH4)) %>%
+                         # pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
+                         pivot_longer(cols = c(L_CO2, L_CH4), names_to = "source", values_to = "value"),
                        Min = left_join(R_CO2_dry[[i]]$Min,
                                        R_CH4_dry[[i]]$Min,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
-                         mutate(R_tot = R_CO2 + R_CH4) %>%
-                           mutate(L_tot = R_tot * A_harv[[i]][2],
+                         # mutate(R_tot = R_CO2 + R_CH4) %>%
+                           mutate(#L_tot = R_tot * A_harv[[i]][2],
                                   L_CO2 = R_CO2 * A_harv[[i]][2],
                                   L_CH4 = R_CH4 * A_harv[[i]][2]) %>%
-                           select(-c(R_tot, R_CO2, R_CH4)) %>%
-                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
+                           # select(-c(R_tot, R_CO2, R_CH4)) %>%
+                         select(-c(R_CO2, R_CH4)) %>%
+                         # pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"),
+                         pivot_longer(cols = c(L_CO2, L_CH4), names_to = "source", values_to = "value"),
                        Max = left_join(R_CO2_dry[[i]]$Max,
                                        R_CH4_dry[[i]]$Max,
                                        by = c("t", "d_wt", "T_air", "Est", "Area")) %>%
-                         mutate(R_tot = R_CO2 + R_CH4) %>%
-                           mutate(L_tot = R_tot * A_harv[[i]][3],
+                         # mutate(R_tot = R_CO2 + R_CH4) %>%
+                           mutate(#L_tot = R_tot * A_harv[[i]][3],
                                   L_CO2 = R_CO2 * A_harv[[i]][3],
                                   L_CH4 = R_CH4 * A_harv[[i]][3]) %>%
-                           select(-c(R_tot, R_CO2, R_CH4)) %>%
-                         pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"))
+                           # select(-c(R_tot, R_CO2, R_CH4)) %>%
+                          select(-c(R_CO2, R_CH4)) %>%
+                         # pivot_longer(cols = c(L_CO2, L_CH4, L_tot), names_to = "source", values_to = "value"))
+                         pivot_longer(cols = c(L_CO2, L_CH4), names_to = "source", values_to = "value"))
+
   }
 
   return(L_tot)

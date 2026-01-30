@@ -4,10 +4,10 @@
 \alias{plotS_forest}
 \title{plotS_forest}
 \usage{
-plotS_forest(S_forest)
+plotS_forest(res)
 }
 \arguments{
-\item{S_forest}{Forest sequestration output}
+\item{res}{LCA output}
 }
 \value{
 plot

@@ -4,10 +4,10 @@
 \alias{plotL_DPOC}
 \title{plotL_DPOC}
 \usage{
-plotL_DPOC(L_DPOC)
+plotL_DPOC(res)
 }
 \arguments{
-\item{L_DPOC}{D/POC losses output}
+\item{res}{LCA output}
 }
 \value{
 plot

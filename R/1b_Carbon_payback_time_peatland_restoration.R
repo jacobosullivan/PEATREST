@@ -1,83 +1,64 @@
 ## 1b. Carbon payback time peatland restoration
 
 #' Carbon_payback_time
-#' @param S_forest Forest sequestration
-#' @param R_tot_forestry Emissions from soils under forestry
-#' @param L_forest Forest product losses
-#' @param L_peatland Emissions from peatland
-#' @param L_DPOC D/POC losses
-#' @return Total peatland restoration carbon accounting
+#' @param res LCA output
+#' @return Carbon payback time/flux intercept
 #' @export
-Carbon_payback_time <- function(S_forest,
-                                R_tot_forestry,
-                                L_forest,
-                                L_peatland,
-                                L_DPOC) {
+Carbon_payback_time <- function(res, sum_areas=T) {
 
   # THIS FUNCTION..
 
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  if (sum_areas) {
+    res_sum <- res %>%
+      group_by(treatment, t, Est) %>%
+      summarise(value = sum(value)) %>%
+      mutate(Area = "All.areas")
+  } else {
+    res_sum <- res %>%
+      group_by(treatment, Area, t, Est) %>%
+      summarise(value = sum(value))
+  }
 
-  # First convert C sequestration into units CO2
-  S_forest_CO2 <- lapply(seq_along(S_forest), FUN = function(x) {
-    res <- lapply(seq_along(S_forest[[x]]), FUN = function(y) {
-      S <- S_forest[[x]][[y]]
-      S <- S %>%
-        select(t, NPP) %>%
-        rename(S_forest = NPP) %>%
-        mutate(S_forest = S_forest * CO2_C)
-      return(S)
-    })
-    names(res) <- names(S_forest[[x]])
-    return(res)
-  })
+  t_flux <- left_join(res_sum %>%
+                        ungroup() %>%
+                        filter(treatment=="CF") %>%
+                        select(-c(treatment)) %>%
+                        rename(CF = value),
+                      res_sum %>%
+                        ungroup() %>%
+                        filter(treatment=="PR") %>%
+                        select(-c(treatment)) %>%
+                        rename(PR = value),
+                      by=c("Area", "t", "Est")) %>%
+    mutate(dif = PR-CF) %>%
+    filter(dif >= 0 & !is.na(dif)) %>%
+    group_by(Area, Est) %>%
+    summarise(t = min(t))
 
-  names(S_forest_CO2) <- names(S_forest)
+  res_cs <- res_sum %>%
+    filter(t >= 0) %>%
+    group_by(treatment, Est, Area) %>%
+    mutate(value_cs = cumsum(value))
 
-  ## Extract dataframes from list objects
-  S_forest_df <- getDf1(S_forest_CO2)
-  L_peatland_df <- getDf2(L_peatland)
-  L_DPOC_df <- getDf2(L_DPOC)
-  L_forest_df <- getDf3(L_forest)
-  L_forest_soils_df <- bind_rows(lapply(L_forest_soils, FUN = bind_rows)) %>%
-    filter(source == "L_tot") %>%
-    select(colnames(L_forest_df))
+  t_payback <- left_join(res_cs %>%
+                           ungroup() %>%
+                           filter(treatment=="CF") %>%
+                           select(-c(treatment,value)) %>%
+                           rename(CF_cs = value_cs),
+                         res_cs %>%
+                           ungroup() %>%
+                           filter(treatment=="PR") %>%
+                           select(-c(treatment,value)) %>%
+                           rename(PR_cs = value_cs),
+                         by=c("Area", "t", "Est")) %>%
+    mutate(dif_cs = PR_cs-CF_cs) %>%
+    filter(dif_cs >= 0) %>%
+    group_by(Area, Est) %>%
+    summarise(t = min(t))
 
-  S_forest_df$treatment <- "CF"
-  L_forest_soils_df$treatment <- "CF"
-  L_peatland_df$treatment <- "PR"
-  L_DPOC_df$treatment <- "PR"
-  L_forest_df$treatment <- "PR"
+  bind_rows(t_flux %>% mutate(metric="flux_int"),
+            t_payback %>% mutate(metric="c_payback"))
 
-  ## Merge dataframes
-  res <- rbind(S_forest_df,
-               L_forest_soils_df,
-               L_peatland_df,
-               L_DPOC_df,
-               L_forest_df)
-
-  res <- res %>%
-    mutate(value = ifelse(grepl("L_", source), -value, value))
-
-  # res %>%
-  #   arrange(t, treatment) %>%
-  #   head(20)
-
-  res_sum <- res %>%
-    group_by(treatment, t, Area, Est) %>%
-    summarise(value = sum(value))
-
-  # res_sum %>%
-  #   arrange(t, treatment) %>%
-  #   head(20)
-
-  p <- ggplot(res_sum, aes(x=t, y=value, col=treatment)) +
-    geom_line() +
-    scale_x_continuous(limits = c(NA, 200)) +
-    geom_hline(yintercept = 0) +
-    facet_grid(Est ~ Area, scales="free_y") +
-    theme_bw() +
-    labs(x="Time since harvesting [y]", y="Carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
-
-  return(p)
+  return(bind_rows(t_flux %>% mutate(metric="flux_int"),
+                   t_payback %>% mutate(metric="c_payback")))
 }
