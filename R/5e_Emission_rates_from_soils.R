@@ -589,19 +589,20 @@ Emissions_rates_forestry_soils_RM <- function(core.dat,
   names(d_wt_pred) <- names(YC)
 
   if (0) {
-    p <- ggplot(bind_rows(d_wt) %>% filter(Area == "Area.2", Age %% 3 == 0),
+    p <- ggplot(bind_rows(d_wt) %>% filter(Area == "Area.1", Age %% 3 == 0),
            aes(x=Age, y=d_wt, col=factor(YC))) +
       geom_point() +
       scale_x_continuous(limits=c(NA, 200)) +
-      geom_line(data=bind_rows(lapply(d_wt_pred, FUN=bind_rows)) %>% filter(Area == "Area.2")) +
+      geom_line(data=bind_rows(lapply(d_wt_pred, FUN=bind_rows)) %>% filter(Area == "Area.1")) +
       # facet_wrap(~ Area) +
       theme_bw() +
       labs(x = "Stand age (yr)", y = "[Root / Water table] depth (m)", col="YC")
 
-    ww <- 11*0.8
-    hh <- 8*0.8
+    ww <- 16
+    hh <- 12
+
     png("../Figures/root_depth_bounded_linear.png",
-        width=ww, height=hh, units="cm", res=300)
+        width=ww/1.58, height=hh/1.6, units="cm", res=300)
     p
     dev.off()
 

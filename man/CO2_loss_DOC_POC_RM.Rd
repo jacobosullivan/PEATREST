@@ -4,27 +4,12 @@
 \alias{CO2_loss_DOC_POC_RM}
 \title{CO2_loss_DOC_POC}
 \usage{
-CO2_loss_DOC_POC_RM(
-  core.dat,
-  L_peatland,
-  pC_DOC = c(Exp = 26, Min = 7, Max = 40),
-  pDOC_CO2 = 100,
-  pC_POC = c(Exp = 8, Min = 4, Max = 10),
-  pPOC_CO2 = 100
-)
+CO2_loss_DOC_POC_RM(core.dat, L_peatland)
 }
 \arguments{
 \item{core.dat}{UI data}
 
 \item{L_peatland}{Peatland emissions object}
-
-\item{pC_DOC}{estimated percent of total carbon losses lost as DOC}
-
-\item{pDOC_CO2}{percent DOC ultimately lost as CO2}
-
-\item{pC_POC}{estimated percent of total carbon losses lost as POC}
-
-\item{pPOC_CO2}{percent POC ultimately lost as CO2}
 }
 \value{
 L_DPOC

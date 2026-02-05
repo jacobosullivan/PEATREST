@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotFunctions.R
 \name{plotL_forest_soils}
 \alias{plotL_forest_soils}
-\title{plotR_tot_forestry}
+\title{plotL_forest_soils}
 \usage{
 plotL_forest_soils(res)
 }
@@ -13,5 +13,5 @@ plotL_forest_soils(res)
 plot
 }
 \description{
-plotR_tot_forestry
+plotL_forest_soils
 }

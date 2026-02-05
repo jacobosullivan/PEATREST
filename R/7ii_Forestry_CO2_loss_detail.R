@@ -890,7 +890,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
           res <- data.frame(t=tt,
                             S_r=CO2_wp[[x]][[y]]["r"] * exp(-tt*alpha[[x]]["r"]),
                             S_s=CO2_wp[[x]][[y]]["s"] * exp(-tt*alpha[[x]]["s"]),
-                            S_s=CO2_wp[[x]][[y]]["b"] * exp(-tt*alpha[[x]]["b"]),
+                            S_b=CO2_wp[[x]][[y]]["b"] * exp(-tt*alpha[[x]]["b"]),
                             S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]))
 
           res <- res %>%
@@ -912,30 +912,30 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
   names(CO2_wp_decay) <- names(CO2_wp)
 
   ## Esimate transportion emissions B*D*E
-  L_T_wp <- lapply(seq_along(B_wp), FUN = function (x) {
-    L_T_wp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
+  L_Twp <- lapply(seq_along(B_wp), FUN = function (x) {
+    L_Twp_a <- lapply(seq_along(B_wp[[x]]), FUN = function(y) {
       if (timber_removed[[x]][1] == 1) {
         L_T <- B_wp[[x]][[y]] * d_wp[[x]][[y]] * E_transport[[x]][y]
         L_T <- data.frame(t = 0,
-                          L_T_Biofuel = unname(L_T["Biofuel"]),
-                          L_T_wpF = unname(L_T["wpF"]),
-                          L_T_wpM = unname(L_T["wpM"]),
-                          L_T_wpS = unname(L_T["wpS"]))
+                          L_TBiofuel = unname(L_T["Biofuel"]),
+                          L_TwpF = unname(L_T["wpF"]),
+                          L_TwpM = unname(L_T["wpM"]),
+                          L_TwpS = unname(L_T["wpS"]))
       } else {
         L_T <- data.frame(t = 0,
-                          L_T_Biofuel = 0,
-                          L_T_wpF = 0,
-                          L_T_wpM = 0,
-                          L_T_wpS = 0)
+                          L_TBiofuel = 0,
+                          L_TwpF = 0,
+                          L_TwpM = 0,
+                          L_TwpS = 0)
       }
 
       return(L_T)
     })
-    names(L_T_wp_a) <- names(B_wp[[x]])
-    return(L_T_wp_a)
+    names(L_Twp_a) <- names(B_wp[[x]])
+    return(L_Twp_a)
   })
 
-  names(L_T_wp) <- names(B_wp)
+  names(L_Twp) <- names(B_wp)
 
   # multiply the power value of the biofuel by the efficiency of the biomass power plant for global efficiency value
   e_biofuel <- list_op(l1 = e_felled_biofuel,
@@ -980,7 +980,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     L_forest[[i]]$L_turf_local <- L_turf_local[[i]]
     L_forest[[i]]$L_fert <- L_fert[[i]]
     L_forest[[i]]$L_wp <- CO2_wp_decay[[i]]
-    L_forest[[i]]$L_T_wp <- L_T_wp[[i]]
+    L_forest[[i]]$L_Twp <- L_Twp[[i]]
     L_forest[[i]]$L_biofuel <- L_biofuel[[i]]
   }
 

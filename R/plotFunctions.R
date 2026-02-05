@@ -7,19 +7,21 @@ plotS_forest <- function(res) {
   # THIS FUNCTION...
 
   df <- res %>%
-    filter(model == "Tree_growth")
+    filter(model == "Tree_growth") %>%
+      mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
 
   p <- ggplot(df, aes(x=t, y=value)) +
-    geom_line(col="green3") +
+    geom_line(col=hue_pal()(1)) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Est ~ Area, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Forestry sequestration [tCO2 eq.]", linetype="", title="Forestry sequestration (3PG)")
+    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", linetype="")#, title="Forestry sequestration (3PG)")
 
   return(p)
 }
 
-#' plotR_tot_forestry
+#' plotL_forest_soils
 #' @param res LCA output
 #' @return plot
 #' @export
@@ -28,24 +30,75 @@ plotL_forest_soils <- function(res) {
   # THIS FUNCTION...
 
   df <- res %>%
+    filter(model == "Forest_soils") %>%
+    mutate(value = -value)
+
+  df <- bind_rows(df,
+                  df %>%
+                    group_by(model, treatment, t, Area, Est) %>%
+                    summarise(value=sum(value)) %>%
+                    mutate(source="L_tot")) %>%
+    mutate(source = factor(source, levels=c("L_CO2", "L_CH4", "L_tot"))) %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
+
+  p <- ggplot(df, aes(x=t, y=value, col=source, linetype=source)) +
+    geom_line() +
+    scale_x_continuous(limits=c(NA, 100)) +
+    scale_colour_manual(values = c(hue_pal()(2), "#D3D3D3"),
+                        labels = axis_labels) +
+    scale_linetype_manual(values = c(1,1,2), guide = "none") +
+    # scale_y_log10() +
+    geom_vline(xintercept = 0, linetype=3) +
+    facet_grid(Area ~ Est) +#, scales="free_y") +
+    theme_bw() +
+    labs(x = "Time (yr)", y="Emissions [tCO2 eq.]", col="")#, title="Emissions from soils under trees")
+  return(p)
+}
+
+#' plotCounterfactual
+#' @param res LCA output
+#' @return plot
+#' @export
+plotCounterfactual <- function(res) {
+
+  # THIS FUNCTION...
+
+  df0 <- res %>%
+    filter(model == "Tree_growth") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  df1 <- res %>%
     filter(model == "Forest_soils")
 
-  coeff <- 20
+  df1 <- df1 %>%
+    group_by(model, treatment, t, Area, Est) %>%
+    summarise(value=sum(value)) %>%
+    mutate(source="L_forest") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
-  df <- bind_rows(lapply(df, FUN = bind_rows)) %>%
-    mutate(source = factor(source, levels=c("L_tot", "L_CO2", "L_CH4")))
 
-  p <- ggplot(df, aes(x=t)) +
-    geom_line(aes(y=value, col=source)) +
-    geom_line(aes(y=d_wt*coeff), col="grey") +
-    scale_y_continuous(name = "Emissions (t CO2 eq. ha-1 yr-1)",
-                       sec.axis = sec_axis(~./coeff, name = "Water table depth (m)")) +
-    scale_x_continuous(limits=c(NA, 100)) +
-    geom_vline(xintercept = 0, linetype=3) +
-    facet_grid(Est ~ Area) +#, scales="free_y") +
+  df <- bind_rows(df0, df1)
+
+  df <- bind_rows(df,
+                  df %>%
+                    group_by(t,Area,Est) %>%
+                    summarise(value=sum(value)) %>%
+                    mutate(source = "S_tot")) %>%
+    mutate(source = factor(source, levels = c("S_tot", "S_forest", "L_forest")))
+
+  axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
+
+  p <- ggplot(df, aes(x=t, y=value, col=factor(source))) +
+    geom_line() +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
+    scale_color_manual(values = c( "#D3D3D3", hue_pal()(2)),
+                       labels = axis_labels) +
+    facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    theme(axis.title.y.right = element_text(color = "grey")) +
-    labs(x = "Time (yr)", col="", title="Emissions from soils under trees")
+    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="Forestry sequestration (3PG)")
+
   return(p)
 }
 
@@ -58,33 +111,66 @@ plotL_forest <- function(res) {
   # THIS FUNCTION ...
 
   df <- res %>%
-    filter(model == "Management")
+    filter(model == "Management") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
   df$discrete <- 0
-  df$discrete[df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_T_Biofuel", "L_T_wpF", "L_T_wpM", "L_T_wpS", "L_Biofuel")] <- 1
+  df$discrete[df$source %in% c("L_harv", "L_mulch", "L_dam", "L_bund", "L_smooth", "L_turf_import", "L_turf_local", "L_fert", "L_TBiofuel", "L_TwpF", "L_TwpM", "L_TwpS", "L_Biofuel")] <- 1
   df <- df %>%
     mutate(value = ifelse(value==0, NA, value))
 
-  p1 <- ggplot(df %>% filter(discrete == 0), aes(x=t, y=value, col=factor(source))) +
+  df_cont <- df %>%
+    filter(discrete == 0) %>%
+    select(t, Area, Est, source, value)
+
+  df_cont <- bind_rows(df_cont %>%
+                         group_by(t, Area, Est) %>%
+                         summarise(value = sum(value)) %>%
+                         mutate(source = "L_tot"),
+                       df_cont) %>%
+    mutate(source = factor(source, levels = unique(source))) %>%
+    arrange(t, Area, Est)
+
+  axis_labels1 <- parse(text = paste0(stringr::str_replace((levels(df_cont$source)), "\\_", "\\["),"]"))
+
+  p1 <- ggplot(df_cont %>%
+                 mutate(value = -value),
+               aes(x=t, y=value, col=factor(source))) +
     geom_line() +
     scale_x_continuous(limits = c(0, 50)) +
-    facet_grid(Est ~ Area, scales="free_y") +
+    scale_color_manual(values = c( "#D3D3D3", hue_pal()(length(axis_labels1)-1)),
+                         labels = axis_labels1) +
+    facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Decay emissions [tCO2]", col="", title="Forestry biomass decay emissions")
+    labs(x="Time since harvesting [y]", y="Decay emissions [t CO2]", col="")#, title="Forestry biomass decay emissions")
 
-  source_l <- sort(unique((df %>% filter(discrete == 1))$source))
-  source_l <- c("L_Biofuel", source_l[source_l != "L_Biofuel"])
-  p2 <- ggplot(df %>%
-                 filter(discrete == 1) %>%
-                 mutate(source = factor(source, levels = source_l)),
+  df_disc <- df %>%
+    filter(discrete == 1) %>%
+    select(t, Area, Est, source, value)
+
+  df_disc <- bind_rows(df_disc %>%
+                         group_by(Area, Est) %>%
+                         summarise(value = sum(value)) %>%
+                         mutate(source = "L_tot"),
+                       df_disc) %>%
+    arrange(Area, Est, value) %>%
+    mutate(source = factor(source, levels = unique(source))) %>%
+    arrange(t, Area, Est)
+
+  axis_labels2 <- parse(text = paste0(stringr::str_replace((levels(df_disc$source)), "\\_", "\\["),"]"))
+
+  p2 <- ggplot(df_disc %>%
+                 mutate(value = -value),
                aes(x=factor(source), y=value, col=factor(source))) +
     geom_point() +
     guides(col="none") +
     scale_y_continuous(transform = "log10") +
-    facet_grid(Est ~ Area) +
+    scale_x_discrete(labels = axis_labels2) +
+    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels2)-1))) +
+    facet_grid(Area ~ Est) +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Harvesting / restoration emissions [tCO2]", col="", title="Discrete management emissions") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1))
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1)) +
+    labs(x="", y="Discrete emissions [tCO2]", col="")#, title="Discrete management emissions") +
 
   return(list(p1, p2))
 }
@@ -99,23 +185,28 @@ plotL_peatland <- function(res) {
   # THIS FUNCTION ...
 
   df <- res %>%
-    filter(model == "Peatland")
+    filter(model == "Peatland") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
   df <- bind_rows(df,
                   df %>%
                     group_by(t, Area, Est) %>%
                     summarise(value=sum(value)) %>%
                     mutate(source = "L_tot")) %>%
-    arrange(t, Area, Est)
+    arrange(t, Area, Est) %>%
+    mutate(source = factor(source, levels = c("L_tot", "L_CO2", "L_CH4")))
 
-  p <- ggplot(df %>%
-                mutate(source = factor(source, levels = c("L_tot", "L_CO2", "L_CH4"))),
-              aes(x=t, y=value, linetype=factor(source))) +
-    geom_line(col="red3") +
+  axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
+
+  p <- ggplot(df,
+              aes(x=t, y=value, col=factor(source))) +
+    geom_line() +
+    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels)-1)),
+                       labels = axis_labels) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Est ~ Area, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Peatland emissions [tCO2 eq.]", linetype="", title="Peatland emissions")
+    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="Peatland emissions")
 
   return(p)
 }
@@ -130,71 +221,38 @@ plotL_DPOC <- function(res) {
   # THIS FUNCTION ...
 
   df <- res %>%
-    filter(model == "Aq_carbon")
+    filter(model == "Aq_carbon") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
-  p <- ggplot(df %>%
-                mutate(source = factor(source, levels = c("L_DOC", "L_POC"))),
-              aes(x=t, y=value, linetype=factor(source))) +
-    geom_line(col="red3") +
-    scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Est ~ Area, scales="free_y") +
-    theme_bw() +
-    labs(x="Time since harvesting [y]", y="D/POC losses [tCO2 eq.]", linetype="", title="DOC and POC losses")
+  df <- bind_rows(df,
+                  df %>%
+                    group_by(t, Area, Est) %>%
+                    summarise(value=sum(value)) %>%
+                    mutate(source = "L_tot")) %>%
+    arrange(t, Area, Est) %>%
+    mutate(source = factor(source, levels = c("L_tot", "L_DOC", "L_POC")))
 
-  return(p)
-}
+  axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
-#' plotLCA
-#' @param res LCA output
-#' @return plot
-#' @export
-plotLCA <- function(res, sum_areas=T) {
-
-  # THIS FUNCTION..
-
-  if (sum_areas) {
-    res_sum <- res %>%
-      group_by(treatment, t, Est) %>%
-      summarise(value = sum(value)) %>%
-      mutate(Area = "All.areas")
-  } else {
-    res_sum <- res %>%
-      group_by(treatment, Area, t, Est) %>%
-      summarise(value = sum(value))
-  }
-
-  t_flux <- left_join(res_sum %>%
-                        ungroup() %>%
-                        filter(treatment=="CF") %>%
-                        select(-c(treatment)) %>%
-                        rename(CF = value),
-                      res_sum %>%
-                        ungroup() %>%
-                        filter(treatment=="PR") %>%
-                        select(-c(treatment)) %>%
-                        rename(PR = value),
-                      by=c("Area", "t", "Est")) %>%
-    mutate(dif = PR-CF) %>%
-    filter(dif >= 0 & !is.na(dif)) %>%
-    group_by(Area, Est) %>%
-    summarise(t = min(t))
-
-  p <- ggplot(res_sum, aes(x=t, y=value, col=treatment)) +
+  p <- ggplot(df,
+              aes(x=t, y=value, col=factor(source))) +
     geom_line() +
-    scale_x_continuous(limits = c(NA, 200)) +
-    geom_vline(data=t_flux, aes(xintercept = t)) +
-    facet_grid(Est ~ Area, scales="free_y") +
+    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels)-1)),
+                       labels = axis_labels) +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
+    facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
+    labs(x="Time since harvesting [y]", y="D/POC loss [tCO2 eq.]", col="")#, title="DOC and POC losses")
 
   return(p)
 }
 
 #' plotLCA
 #' @param res LCA output
+#' @param t_payback_res carbon flux intercept estimate
 #' @return plot
 #' @export
-plotLCA_cs <- function(res, sum_areas=T) {
+plotLCA <- function(res, t_payback_res, sum_areas=T) {
 
   # THIS FUNCTION..
 
@@ -203,40 +261,110 @@ plotLCA_cs <- function(res, sum_areas=T) {
       group_by(treatment, t, Est) %>%
       summarise(value = sum(value)) %>%
       mutate(Area = "All.areas")
+
+    t_flux <- left_join(res_sum %>%
+                          ungroup() %>%
+                          filter(treatment=="CF") %>%
+                          select(-c(treatment)) %>%
+                          rename(CF = value),
+                        res_sum %>%
+                          ungroup() %>%
+                          filter(treatment=="PR") %>%
+                          select(-c(treatment)) %>%
+                          rename(PR = value),
+                        by=c("Area", "t", "Est")) %>%
+      mutate(dif = PR-CF) %>%
+      filter(dif >= 0 & !is.na(dif)) %>%
+      group_by(Area, Est) %>%
+      summarise(t = min(t))
+
   } else {
     res_sum <- res %>%
       group_by(treatment, Area, t, Est) %>%
       summarise(value = sum(value))
+
+    t_flux <- t_payback_res %>%
+      filter(metric == "t_flux")
   }
 
-  res_cs <- res_sum %>%
-    filter(t >= 0) %>%
-    group_by(treatment, Est, Area) %>%
-    mutate(value_cs = cumsum(value))
+  res_sum <- res_sum %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
-  t_payback <- left_join(res_cs %>%
-                           ungroup() %>%
-                           filter(treatment=="CF") %>%
-                           select(-c(treatment,value)) %>%
-                           rename(CF_cs = value_cs),
-                         res_cs %>%
-                           ungroup() %>%
-                           filter(treatment=="PR") %>%
-                           select(-c(treatment,value)) %>%
-                           rename(PR_cs = value_cs),
-                         by=c("Area", "t", "Est")) %>%
-    mutate(dif_cs = PR_cs-CF_cs) %>%
-    filter(dif_cs >= 0) %>%
-    group_by(Area, Est) %>%
-    summarise(t = min(t))
+  t_flux <- t_flux %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  p <- ggplot(res_sum %>% filter(t <= max(t_payback_res$t + 50)), aes(x=t, y=value, col=treatment)) +
+    geom_line() +
+    geom_vline(data=t_flux, aes(xintercept = t), linetype=2) +
+    facet_grid(Area ~ Est, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="LCA summary")
 
-  p <- ggplot(res_cs %>% filter(t <= 100), aes(x=t, y=value_cs, col=treatment)) +
+  return(p)
+}
+
+#' plotLCA
+#' @param res LCA output
+#' @param t_payback_res carbon payback estimate
+#' @return plot
+#' @export
+plotLCA_cs <- function(res, t_payback_res, sum_areas=T) {
+
+  # THIS FUNCTION..
+
+  if (sum_areas) {
+    res_sum <- res %>%
+      group_by(treatment, t, Est) %>%
+      summarise(value = sum(value)) %>%
+      mutate(Area = "All.areas")
+
+    res_cs <- res_sum %>%
+      filter(t >= 0) %>%
+      group_by(treatment, Est, Area) %>%
+      mutate(value_cs = cumsum(value))
+
+    t_payback <- left_join(res_cs %>%
+                             ungroup() %>%
+                             filter(treatment=="CF") %>%
+                             select(-c(treatment,value)) %>%
+                             rename(CF_cs = value_cs),
+                           res_cs %>%
+                             ungroup() %>%
+                             filter(treatment=="PR") %>%
+                             select(-c(treatment,value)) %>%
+                             rename(PR_cs = value_cs),
+                           by=c("Area", "t", "Est")) %>%
+      mutate(dif_cs = PR_cs-CF_cs) %>%
+      filter(dif_cs >= 0) %>%
+      group_by(Area, Est) %>%
+      summarise(t = min(t))
+  } else {
+    res_sum <- res %>%
+      group_by(treatment, Area, t, Est) %>%
+      summarise(value = sum(value))
+
+    res_cs <- res_sum %>%
+      filter(t >= 0) %>%
+      group_by(treatment, Est, Area) %>%
+      mutate(value_cs = cumsum(value))
+
+    t_payback <- t_payback_res %>%
+      filter(metric == "t_payback")
+  }
+
+  res_cs <- res_cs %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  t_payback <- t_payback %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  p <- ggplot(res_cs %>% filter(t <= max(t_payback_res$t) + 50), aes(x=t, y=value_cs, col=treatment)) +
       geom_line() +
-      geom_vline(data=t_payback, aes(xintercept = t)) +
-      facet_grid(Est ~ Area, scales="free_y") +
+      scale_x_continuous(limits = c(min(res_sum$t), NA)) +
+      geom_vline(data=t_payback , aes(xintercept = t), linetype=2) +
+      facet_grid(Area ~ Est, scales="free_y") +
       theme_bw() +
-      labs(x="Time since harvesting [y]", y="Cummulative carbon sequestration [tCO2 eq.]", col="", title="LCA summary")
+      labs(x="Time since harvesting [y]", y="Cummulative sequestration [tCO2 eq.]", col="")#, title="LCA summary")
 
   return(p)
 }

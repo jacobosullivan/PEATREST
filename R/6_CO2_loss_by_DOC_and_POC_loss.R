@@ -77,24 +77,21 @@ CO2_loss_DOC_POC <- function(core.dat,
 #' CO2_loss_DOC_POC
 #' @param core.dat UI data
 #' @param L_peatland Peatland emissions object
-#' @param pC_DOC estimated percent of total carbon losses lost as DOC
-#' @param pDOC_CO2 percent DOC ultimately lost as CO2
-#' @param pC_POC estimated percent of total carbon losses lost as POC
-#' @param pPOC_CO2 percent POC ultimately lost as CO2
 #' @return L_DPOC
 #' @export
 CO2_loss_DOC_POC_RM <- function(core.dat,
-                                L_peatland,
-                                pC_DOC = c(Exp = 26, Min = 7, Max = 40),
-                                pDOC_CO2 = 100,
-                                pC_POC = c(Exp = 8, Min = 4, Max = 10),
-                                pPOC_CO2 = 100) {
+                                L_peatland) {
 
   # THIS FUNCTION...
 
   # CO2_C <- 3.667 # Molecular weight ratio C to CO2
   # CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
   # pC_CH4 <- 0.75 # proportion of molecular weight of CH4 that is Carbon (12/16)
+
+  pC_DOC = c(Exp = 26, Min = 7, Max = 40)
+  pDOC_CO2 = 100
+  pC_POC = c(Exp = 8, Min = 4, Max = 10)
+  pPOC_CO2 = 100
 
   # Total gaseous carbon losses due to microbial metabolism IN UNITS CO2 eq.
   L_C_Tot <- lapply(seq_along(L_peatland), FUN = function(x) {

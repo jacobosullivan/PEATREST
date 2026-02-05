@@ -56,9 +56,9 @@ Carbon_payback_time <- function(res, sum_areas=T) {
     group_by(Area, Est) %>%
     summarise(t = min(t))
 
-  bind_rows(t_flux %>% mutate(metric="flux_int"),
-            t_payback %>% mutate(metric="c_payback"))
+  bind_rows(t_flux %>% mutate(metric="t_flux"),
+            t_payback %>% mutate(metric="t_payback"))
 
-  return(bind_rows(t_flux %>% mutate(metric="flux_int"),
-                   t_payback %>% mutate(metric="c_payback")))
+  return(bind_rows(t_flux %>% mutate(metric="t_flux"),
+                   t_payback %>% mutate(metric="t_payback")))
 }
