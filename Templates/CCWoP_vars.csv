@@ -112,8 +112,9 @@ Performance,NA,Windfarm,forestry
 Height of turbines (m),H_turb,Windfarm,forestry
 Average site windspeed (m s-1),Vwind_site,Windfarm,forestry
 Estimated downtime for maintenance etc (%),t_down,Windfarm,forestry
-Emissions due to forestry/restoration operations,NA,Emissions,forestry
+Emissions factors,NA,Emissions,forestry
 Emissions from felling (kg CO2 m-3),E_harv,Emissions,forestry
+Grid-mix emission factor (t CO2 MWh-1),E_grid_mix,Emissions,forestry
 Emissions of CO2 associated with transportation (g CO2 km-1 t-1),E_transport,Emissions,forestry
 Emissions from mulching (kg CO2 ha-1),E_mulch,Emissions,forestry
 Emissions from damming (kg CO2 ha-1),E_dam,Emissions,forestry

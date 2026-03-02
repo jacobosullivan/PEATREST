@@ -4,11 +4,9 @@
 \alias{Forestry_CO2_loss_detail_RM}
 \title{Forestry_CO2_loss_detail}
 \usage{
-Forestry_CO2_loss_detail_RM(core.dat, forestry.dat, growthYield.dat, S_forest)
+Forestry_CO2_loss_detail_RM(forestry.dat, growthYield.dat, S_forest)
 }
 \arguments{
-\item{core.dat}{UI data}
-
 \item{forestry.dat}{UI forestry data}
 
 \item{growthYield.dat}{growth and yield data (estimated from CARBINE runs)}

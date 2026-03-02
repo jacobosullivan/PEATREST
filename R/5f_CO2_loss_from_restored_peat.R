@@ -1,12 +1,10 @@
 ## 5f. CO2 loss from restored peatland
 
 #' CO2_loss_restoration
-#' @param core.dat UI data
-#' @param AV_indirect Area/Volume of drained peat
 #' @param R_tot estimated emissions rates
 #' @return L_indirect
 #' @export
-CO2_loss_restoration <- function(core.dat, R_tot) {
+CO2_loss_restoration <- function(R_tot) {
 
   ## This function will estimate the emissions from the site following harvesting and restoration interventions
   ## assuming a non-linear restoration of ecosystem function parameterised by the user
@@ -19,7 +17,6 @@ CO2_loss_restoration <- function(core.dat, R_tot) {
   # Thus, average WTD will systematically under estimate methane emissions
 
   # Extract input variables for easy access
-  peat_type <- core.dat$Peatland$peat_type # may not be required, depends if ECOSSE can resolve peat type
   A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
   t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow") # time between felling and restoration
   t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_peatland") # time to restoration of microbial function

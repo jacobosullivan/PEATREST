@@ -10,16 +10,7 @@ devtools::document()
 
 path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1.xlsx" # select user input spreadsheet
 
-dat <- getData(path)
-
-## I need tests to ensure all data has been passed. If not, return error messages
-core.dat <- dat$core.dat
-forestry.dat <- dat$forestry.dat
-construct.dat <- dat$construct.dat
-rm(dat)
-
-# rm(core.dat)
-
+forestry.dat <- getData(path)$forestry.dat
 growthYield.dat <- getGrowthYieldData()
 
 ## YC not passed by user, these are estimated from height/age data
@@ -56,8 +47,7 @@ S_forest <- C_sequest_in_trees_RM(forestry.dat)
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-L_forest_soils <- Emissions_rates_forestry_soils_RM(core.dat,
-                                                    forestry.dat,
+L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat,
                                                     growthYield.dat)
 
 ################################################################################
@@ -72,8 +62,7 @@ L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat,
 ############ Harvesting/Restoration emissions and wood product decay ###########
 ################################################################################
 
-L_forest <- Forestry_CO2_loss_detail_RM(core.dat,
-                                        forestry.dat,
+L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat,
                                         growthYield.dat,
                                         S_forest)
 
@@ -81,15 +70,13 @@ L_forest <- Forestry_CO2_loss_detail_RM(core.dat,
 ########################## Emissions rates from soils ##########################
 ################################################################################
 
-R_tot <- Emissions_rates_soils_RM(core.dat = core.dat,
-                                  forestry.dat = forestry.dat)
+R_tot <- Emissions_rates_soils_RM(forestry.dat)
 
 ################################################################################
 ############################### Loss of Soil CO2 ###############################
 ################################################################################
 
-L_peatland <- CO2_loss_restoration(core.dat = core.dat,
-                                   R_tot = R_tot)
+L_peatland <- CO2_loss_restoration(R_tot)
 
 ################################################################################
 ###################### Aquatic carbon loss from peatland #######################

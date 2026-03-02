@@ -4,11 +4,9 @@
 \alias{Emissions_rates_soils_RM}
 \title{Emissions_rates_soils}
 \usage{
-Emissions_rates_soils_RM(core.dat, forestry.dat)
+Emissions_rates_soils_RM(forestry.dat)
 }
 \arguments{
-\item{core.dat}{UI data}
-
 \item{forestry.dat}{UI forestry data}
 }
 \value{

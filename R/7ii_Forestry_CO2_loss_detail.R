@@ -290,14 +290,12 @@ Forestry_CO2_loss_detail <- function(core.dat,
 
 # 7ii. Forestry CO2 loss - detail restoration model
 #' Forestry_CO2_loss_detail
-#' @param core.dat UI data
 #' @param forestry.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @param S_forest 3PG output
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
-Forestry_CO2_loss_detail_RM <- function(core.dat,
-                                        forestry.dat,
+Forestry_CO2_loss_detail_RM <- function(forestry.dat,
                                         growthYield.dat,
                                         S_forest) {
 
@@ -424,7 +422,7 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
     }
   })
 
-  E_grid_mix <- rep(list(core.dat$Counterfactual$E_grid_mix), length = length(grep("Area", names(forestry.dat))))
+  E_grid_mix <- rep(list(forestry.dat$Emissions$E_grid_mix), length = length(grep("Area", names(forestry.dat))))
   names(E_grid_mix) <- names(r_CBiomass)
 
   # Wood product handling
