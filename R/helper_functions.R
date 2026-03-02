@@ -142,17 +142,19 @@ getDf3 <- function(list_ob) {
 
 #' getCarbonDf
 #' @param S_forest Forest sequestration
-#' @param R_tot_forestry Emissions from soils under forestry
+#' @param L_forest_soils Emissions from soils under forestry
+#' @param L_AqC_forest_soils Aquatic carbon losses from forest soils
 #' @param L_forest Forest product losses
 #' @param L_peatland Emissions from peatland
-#' @param L_DPOC D/POC losses
+#' @param L_AqC_peatland Aquatic carbon losses from oeatland
 #' @return Total peatland restoration carbon accounting dataframe
 #' @export
 getCarbonDf <- function(S_forest,
-                        R_tot_forestry,
+                        L_forest_soils,
+                        L_AqC_forest_soils,
                         L_forest,
                         L_peatland,
-                        L_DPOC) {
+                        L_AqC_peatland) {
 
   # Get forest sequestration (units CO2)
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
@@ -181,6 +183,11 @@ getCarbonDf <- function(S_forest,
   L_forest_soils_df$model <- "Forest_soils"
   L_forest_soils_df$treatment <- "CF"
 
+  # Get forest aquatic carbon loss
+  L_AqC_forest_soils_df <- getDf1(L_AqC_forest_soils)
+  L_AqC_forest_soils_df$model <- "Forest_AqC_loss"
+  L_AqC_forest_soils_df$treatment <- "CF"
+
   # Get silvicuture/restoration emissions
   L_forest_df <- getDf3(L_forest)
   L_forest_df$model <- "Management"
@@ -191,16 +198,17 @@ getCarbonDf <- function(S_forest,
   L_peatland_df$model <- "Peatland"
   L_peatland_df$treatment <- "PR"
 
-  # Get D/POC losses
-  L_DPOC_df <- getDf2(L_DPOC)
-  L_DPOC_df$model <- "Aq_carbon"
-  L_DPOC_df$treatment <- "PR"
+  # Get forest aquatic carbon loss
+  L_AqC_peatland_df <- getDf1(L_AqC_peatland)
+  L_AqC_peatland_df$model <- "Peatland_AqC_loss"
+  L_AqC_peatland_df$treatment <- "PR"
 
   res <- bind_rows(S_forest_df,
                    L_forest_soils_df,
+                   L_AqC_forest_soils_df,
                    L_forest_df,
                    L_peatland_df,
-                   L_DPOC_df)
+                   L_AqC_peatland_df)
 
   res <- res %>%
     filter(!is.na(value) & value != 0) %>%
@@ -210,3 +218,21 @@ getCarbonDf <- function(S_forest,
   return(res)
 }
 
+if (0){
+  x <- seq(0,1,length.out=101)
+  xy <- data.frame(x=rep(x,3),
+                   y=c(rest_dyn_mod(x,n=1,0,1,convThresh=0.99),
+                       rest_dyn_mod(x,n=2.25,0,1,convThresh=0.99),
+                       rest_dyn_mod(x,n=5,0,1,convThresh=0.99)),
+                   n=rep(c(1,2.25,5), each=101))
+
+  pAsym <- ggplot(xy, aes(x=x, y=y, col=factor(n))) +
+    geom_line() +
+    theme_bw() +
+    labs(col="n")
+
+  png("../Figures/asymptotic_function.png",
+      width=10.5, height=7.5, units="cm", res=300)
+  pAsym
+  dev.off()
+}

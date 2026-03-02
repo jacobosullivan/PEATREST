@@ -75,12 +75,14 @@ CO2_loss_DOC_POC <- function(core.dat,
 }
 
 #' CO2_loss_DOC_POC
-#' @param core.dat UI data
-#' @param L_peatland Peatland emissions object
+#' @param forestry.dat UI forestry data
+#' @param L_gaseous Emissions object (forest soils or peatland)
+#' @param forest_soils Select input from forest soils model
 #' @return L_DPOC
 #' @export
-CO2_loss_DOC_POC_RM <- function(core.dat,
-                                L_peatland) {
+CO2_loss_DOC_POC_RM <- function(forestry.dat,
+                                L_gaseous,
+                                forest_soils = T) {
 
   # THIS FUNCTION...
 
@@ -88,40 +90,53 @@ CO2_loss_DOC_POC_RM <- function(core.dat,
   # CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
   # pC_CH4 <- 0.75 # proportion of molecular weight of CH4 that is Carbon (12/16)
 
-  pC_DOC = c(Exp = 26, Min = 7, Max = 40)
-  pDOC_CO2 = 100
-  pC_POC = c(Exp = 8, Min = 4, Max = 10)
-  pPOC_CO2 = 100
+  rho_AqC <- forestry.dat$Aq.Carbon$rho_AqC # ratios from Smith et al. summed across DOC/POC
+  R_AqC0 <- forestry.dat$Aq.Carbon$R_AqC0
 
-  # Total gaseous carbon losses due to microbial metabolism IN UNITS CO2 eq.
-  L_C_Tot <- lapply(seq_along(L_peatland), FUN = function(x) {
-    res <- lapply(seq_along(L_peatland[[x]]), FUN = function(y) {
-      df <- L_peatland[[x]][[y]]
-      df <- df %>%
-        mutate(L_C = L_CO2 + L_CH4) %>%
-        select(t, L_C)
+  # print(rho_AqC)
+
+  if (forest_soils) { # select data structure emissions from forest soils
+    L_AqC <- lapply(seq_along(L_gaseous), FUN = function(x) {
+      res <- lapply(seq_along(L_gaseous[[x]]), FUN = function(y) {
+        df <- L_gaseous[[x]][[y]]
+        df <- df %>%
+          select(t, source, value) %>%
+          group_by(t) %>%
+          summarise(L_tot = sum(value)) %>%
+          mutate(L_AqC = L_tot * rho_AqC[y]) %>%
+          mutate(L_AqC = ifelse(L_AqC < R_AqC0[y], R_AqC0[y], L_AqC)) %>%
+          select(-L_tot) %>%
+
+        return(df)
+      })
+      names(res) <- names(L_gaseous[[x]])
+      return(res)
     })
-    names(res) <- names(L_peatland[[x]])
-    return(res)
-  })
 
-  names(L_C_Tot) <- names(L_peatland)
+    names(L_AqC) <- names(L_gaseous)
 
-  # Compute D/POC loss via empirically estimated ratios to total gaseous loss
-  L_DPOC <- lapply(seq_along(L_C_Tot), FUN = function(x) {
-    res <- lapply(seq_along(L_C_Tot[[x]]), FUN = function(y) {
-      df <- L_C_Tot[[x]][[y]]
-      df <- df %>%
-        mutate(L_DOC = L_C * (pC_DOC[y] / 100) * (pDOC_CO2 / 100),
-               L_POC = L_C * (pC_POC[y] / 100) * (pPOC_CO2 / 100)) %>%
-        select(-L_C)
-      return(df)
+  } else { # select data structure emissions from peatlands
+
+    L_AqC <- lapply(seq_along(L_gaseous), FUN = function(x) {
+      res <- lapply(seq_along(L_gaseous[[x]]), FUN = function(y) {
+        df <- L_gaseous[[x]][[y]]
+        df <- df %>%
+          mutate(L_tot = L_CO2 + L_CH4) %>%
+          mutate(L_AqC = L_tot * rho_AqC[y]) %>%
+          mutate(L_AqC = ifelse(L_AqC < R_AqC0[y], R_AqC0[y], L_AqC)) %>%
+          select(t, L_AqC)
+
+          return(df)
+      })
+      names(res) <- names(L_gaseous[[x]])
+      return(res)
     })
-    names(res) <- names(L_C_Tot[[x]])
-    return(res)
-  })
 
-  names(L_DPOC) <- names(L_C_Tot)
+    names(L_AqC) <- names(L_gaseous)
 
-  return(L_DPOC)
+  }
+
+  return(L_AqC)
 }
+
+

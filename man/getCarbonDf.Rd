@@ -4,18 +4,27 @@
 \alias{getCarbonDf}
 \title{getCarbonDf}
 \usage{
-getCarbonDf(S_forest, R_tot_forestry, L_forest, L_peatland, L_DPOC)
+getCarbonDf(
+  S_forest,
+  L_forest_soils,
+  L_AqC_forest_soils,
+  L_forest,
+  L_peatland,
+  L_AqC_peatland
+)
 }
 \arguments{
 \item{S_forest}{Forest sequestration}
 
-\item{R_tot_forestry}{Emissions from soils under forestry}
+\item{L_forest_soils}{Emissions from soils under forestry}
+
+\item{L_AqC_forest_soils}{Aquatic carbon losses from forest soils}
 
 \item{L_forest}{Forest product losses}
 
 \item{L_peatland}{Emissions from peatland}
 
-\item{L_DPOC}{D/POC losses}
+\item{L_AqC_peatland}{Aquatic carbon losses from oeatland}
 }
 \value{
 Total peatland restoration carbon accounting dataframe

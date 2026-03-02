@@ -19,6 +19,7 @@ Carbon_payback_time <- function(res, sum_areas=T) {
       summarise(value = sum(value))
   }
 
+  # THIS FAILS IF PEATLAND NEVER IMPROVES ON FLUXES FROM FORESTRY! FIX
   t_flux <- left_join(res_sum %>%
                         ungroup() %>%
                         filter(treatment=="CF") %>%

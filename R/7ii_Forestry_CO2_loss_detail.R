@@ -545,8 +545,8 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
       V_a <- growthYield.dat %>%
         filter(Spp == Spp_a,
-               YC == YC_a,
-               Age == t_harv_a) %>%
+               YC == floor(YC_a), # floor required since if YC or t_harv implicitly coerced to floats, filter will fail!
+               Age == floor(t_harv_a)) %>%
         select(V_a)
 
       V_harv_a <- V_a * A_harv[[x]][[y]]
@@ -734,8 +734,8 @@ Forestry_CO2_loss_detail_RM <- function(core.dat,
 
       rho_ag <- growthYield.dat %>%
         filter(Spp == Spp_a,
-               YC == YC_a,
-               Age == t_harv_a) %>%
+               YC == floor(YC_a),
+               Age == floor(t_harv_a)) %>%
         select(rho_ag)
 
       C_forest_ag <- rho_ag * C_forest_tot[[x]][y]

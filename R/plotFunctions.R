@@ -16,7 +16,7 @@ plotS_forest <- function(res) {
     scale_x_continuous(limits = c(min(df$t), 200)) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", linetype="")#, title="Forestry sequestration (3PG)")
+    labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", linetype="")#, title="Forestry sequestration (3PG)")
 
   return(p)
 }
@@ -46,14 +46,14 @@ plotL_forest_soils <- function(res) {
   p <- ggplot(df, aes(x=t, y=value, col=source, linetype=source)) +
     geom_line() +
     scale_x_continuous(limits=c(NA, 100)) +
-    scale_colour_manual(values = c(hue_pal()(2), "#D3D3D3"),
+    scale_colour_manual(values = c(hue_pal()(2), "black"),
                         labels = axis_labels) +
     scale_linetype_manual(values = c(1,1,2), guide = "none") +
     # scale_y_log10() +
     geom_vline(xintercept = 0, linetype=3) +
     facet_grid(Area ~ Est) +#, scales="free_y") +
     theme_bw() +
-    labs(x = "Time (yr)", y="Emissions [tCO2 eq.]", col="")#, title="Emissions from soils under trees")
+    labs(x = "Time (yr)", y="Emissions (t CO2 eq.)", col="")#, title="Emissions from soils under trees")
   return(p)
 }
 
@@ -78,26 +78,29 @@ plotCounterfactual <- function(res) {
     mutate(source="L_forest") %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  df2 <- res %>%
+    filter(model == "Forest_AqC_loss") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
-  df <- bind_rows(df0, df1)
+  df <- bind_rows(df0, df1, df2)
 
   df <- bind_rows(df,
                   df %>%
                     group_by(t,Area,Est) %>%
                     summarise(value=sum(value)) %>%
                     mutate(source = "S_tot")) %>%
-    mutate(source = factor(source, levels = c("S_tot", "S_forest", "L_forest")))
+    mutate(source = factor(source, levels = c("S_tot", "S_forest", "L_forest", "L_AqC")))
 
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df, aes(x=t, y=value, col=factor(source))) +
     geom_line() +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    scale_color_manual(values = c( "#D3D3D3", hue_pal()(2)),
+    scale_color_manual(values = c( "black", hue_pal()(3)),
                        labels = axis_labels) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="Forestry sequestration (3PG)")
+    labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", col="")#, title="Forestry sequestration (3PG)")
 
   return(p)
 }
@@ -138,11 +141,11 @@ plotL_forest <- function(res) {
                aes(x=t, y=value, col=factor(source))) +
     geom_line() +
     scale_x_continuous(limits = c(0, 50)) +
-    scale_color_manual(values = c( "#D3D3D3", hue_pal()(length(axis_labels1)-1)),
+    scale_color_manual(values = c( "black", hue_pal()(length(axis_labels1)-1)),
                          labels = axis_labels1) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Decay emissions [t CO2]", col="")#, title="Forestry biomass decay emissions")
+    labs(x="Time since harvesting (yr)", y="Emissions (t CO2 eq.)", col="")#, title="Forestry biomass decay emissions")
 
   df_disc <- df %>%
     filter(discrete == 1) %>%
@@ -166,11 +169,11 @@ plotL_forest <- function(res) {
     guides(col="none") +
     scale_y_continuous(transform = "log10") +
     scale_x_discrete(labels = axis_labels2) +
-    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels2)-1))) +
+    scale_color_manual(values = c("black", hue_pal()(length(axis_labels2)-1))) +
     facet_grid(Area ~ Est) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1)) +
-    labs(x="", y="Discrete emissions [tCO2]", col="")#, title="Discrete management emissions") +
+    labs(x="", y="Emissions (t CO2)", col="")#, title="Discrete management emissions") +
 
   return(list(p1, p2))
 }
@@ -184,65 +187,91 @@ plotL_peatland <- function(res) {
 
   # THIS FUNCTION ...
 
-  df <- res %>%
+  df0 <- res %>%
     filter(model == "Peatland") %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  df1 <- res %>%
+    filter(model == "Peatland_AqC_loss") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
+
+  df <- bind_rows(df0, df1)
 
   df <- bind_rows(df,
                   df %>%
                     group_by(t, Area, Est) %>%
                     summarise(value=sum(value)) %>%
-                    mutate(source = "L_tot")) %>%
+                    mutate(source = "S_tot")) %>%
     arrange(t, Area, Est) %>%
-    mutate(source = factor(source, levels = c("L_tot", "L_CO2", "L_CH4")))
+    mutate(source = factor(source, levels = c("S_tot", "L_CO2", "L_CH4", "L_AqC")))
 
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df,
               aes(x=t, y=value, col=factor(source))) +
     geom_line() +
-    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels)-1)),
+    scale_color_manual(values = c("black", hue_pal()(length(axis_labels)-1)),
                        labels = axis_labels) +
-    scale_x_continuous(limits = c(min(df$t), 200)) +
+    scale_x_continuous(limits = c(min(df$t), 120)) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="Peatland emissions")
+    labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", col="")#, title="Peatland emissions")
 
   return(p)
 }
 
-#' plotL_DPOC
+#' plotL_AqC_forest_soils
 #' @param res LCA output
 #' @return plot
 #' @export
-plotL_DPOC <- function(res) {
-
+plotL_AqC_forest_soils <- function(res) {
 
   # THIS FUNCTION ...
 
   df <- res %>%
-    filter(model == "Aq_carbon") %>%
-    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
-
-  df <- bind_rows(df,
-                  df %>%
-                    group_by(t, Area, Est) %>%
-                    summarise(value=sum(value)) %>%
-                    mutate(source = "L_tot")) %>%
-    arrange(t, Area, Est) %>%
-    mutate(source = factor(source, levels = c("L_tot", "L_DOC", "L_POC")))
+    filter(model == "Forest_AqC_loss") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")),
+           source = factor(source))
 
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df,
               aes(x=t, y=value, col=factor(source))) +
     geom_line() +
-    scale_color_manual(values = c("#D3D3D3", hue_pal()(length(axis_labels)-1)),
+    scale_color_manual(values = hue_pal()(1),
                        labels = axis_labels) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="D/POC loss [tCO2 eq.]", col="")#, title="DOC and POC losses")
+    labs(x="Time since harvesting (yr)", y="Aquatic carbon loss (t CO2 eq.)", col="")#, title="DOC and POC losses")
+
+  return(p)
+}
+
+#' plotL_AqC_peatland
+#' @param res LCA output
+#' @return plot
+#' @export
+plotL_AqC_peatland <- function(res) {
+
+  # THIS FUNCTION ...
+
+  df <- res %>%
+    filter(model == "Peatland_AqC_loss") %>%
+    mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")),
+           source = factor(source))
+
+  axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
+
+  p <- ggplot(df,
+              aes(x=t, y=value, col=factor(source))) +
+    geom_line() +
+    scale_color_manual(values = hue_pal()(1),
+                       labels = axis_labels) +
+    scale_x_continuous(limits = c(min(df$t), 200)) +
+    facet_grid(Area ~ Est, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting (yr)", y="Aquatic carbon loss (t CO2 eq.)", col="")#, title="DOC and POC losses")
 
   return(p)
 }
@@ -298,7 +327,7 @@ plotLCA <- function(res, t_payback_res, sum_areas=T) {
     geom_vline(data=t_flux, aes(xintercept = t), linetype=2) +
     facet_grid(Area ~ Est, scales="free_y") +
     theme_bw() +
-    labs(x="Time since harvesting [y]", y="Sequestration [tCO2 eq.]", col="")#, title="LCA summary")
+    labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq. / yr)", col="")#, title="LCA summary")
 
   return(p)
 }
@@ -364,7 +393,51 @@ plotLCA_cs <- function(res, t_payback_res, sum_areas=T) {
       geom_vline(data=t_payback , aes(xintercept = t), linetype=2) +
       facet_grid(Area ~ Est, scales="free_y") +
       theme_bw() +
-      labs(x="Time since harvesting [y]", y="Cummulative sequestration [tCO2 eq.]", col="")#, title="LCA summary")
+      labs(x="Time since harvesting (yr)", y="Cummulative sequestration (t CO2 eq.)", col="")#, title="LCA summary")
+
+  return(p)
+}
+
+#' plotES
+#' @param res LCA output
+#' @param t_payback_res carbon payback estimate
+#' @return plot
+#' @export
+plotES <- function(res, t_payback_res) {
+
+  # THIS FUNCTION..
+
+  res_sum <- res %>%
+    group_by(treatment, Area, t, Est) %>%
+    summarise(value = sum(value))
+
+  res_cs <- res_sum %>%
+    filter(t >= 0) %>%
+    group_by(treatment, Est, Area) %>%
+    mutate(value = cumsum(value))
+
+  t_payback <- t_payback_res %>%
+    filter(metric == "t_payback")
+
+  t_flux <- t_payback_res %>%
+    filter(metric == "t_flux")
+
+  res_sum$model <- "Sequestration (t CO2 eq. / (ha yr))"
+  res_cs$model <- "Storage (t CO2 eq. / ha)"
+  t_flux$model <- "Sequestration (t CO2 eq. / (ha yr))"
+  t_payback$model <- "Storage (t CO2 eq. / ha)"
+
+  res0 <- bind_rows(res_sum, res_cs)
+  t_payback0 <- bind_rows(t_flux, t_payback)
+
+  p <- ggplot(res0 %>% filter(t <= max(t_payback_res$t) + 50),
+               aes(x=t, y=value, col=treatment)) +
+    geom_line() +
+    scale_x_continuous(limits = c(min(res_sum$t), NA)) +
+    geom_vline(data=t_payback0 , aes(xintercept = t), linetype=2) +
+    facet_wrap(~ model, scales="free_y") +
+    theme_bw() +
+    labs(x="Time since harvesting (yr)", y="Value", col="")
 
   return(p)
 }

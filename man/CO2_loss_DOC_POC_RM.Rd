@@ -4,12 +4,14 @@
 \alias{CO2_loss_DOC_POC_RM}
 \title{CO2_loss_DOC_POC}
 \usage{
-CO2_loss_DOC_POC_RM(core.dat, L_peatland)
+CO2_loss_DOC_POC_RM(forestry.dat, L_gaseous, forest_soils = T)
 }
 \arguments{
-\item{core.dat}{UI data}
+\item{forestry.dat}{UI forestry data}
 
-\item{L_peatland}{Peatland emissions object}
+\item{L_gaseous}{Emissions object (forest soils or peatland)}
+
+\item{forest_soils}{Select input from forest soils model}
 }
 \value{
 L_DPOC

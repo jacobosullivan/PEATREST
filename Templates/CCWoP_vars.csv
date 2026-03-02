@@ -124,6 +124,9 @@ Emissions from turfing (local) (kg CO2 ha-1),E_turf_local,Emissions,forestry
 Emissions from lime and fertilser treatment (kg CO2 ha-1),E_fert,Emissions,forestry
 Forestry Plantation Characteristics,NA,Emissions,forestry
 Note - total number of turbines already specified: ,NA,Emissions,forestry
+Aqauatic carbon flux,NA,Aq.Carbon,forestry
+Aquatic carbon loss to total gaseous loss ratio,rho_AqC,Aq.Carbon,forestry
+Reprentative total aquatic carbon flux restored peatland (t CO2 ha-1 yr-1),R_AqC0,Aq.Carbon,forestry
 AREA 1,NA,Area.1,forestry
 Number of turbines in this area,n_turb,Area.1,forestry
 Power curve - NOT USED!,NA,Area.1,forestry
