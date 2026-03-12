@@ -293,11 +293,13 @@ Forestry_CO2_loss_detail <- function(core.dat,
 #' @param forestry.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @param S_forest 3PG output
+#' @param alpha_df dataframe of decay rates / efficiencies
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
 Forestry_CO2_loss_detail_RM <- function(forestry.dat,
                                         growthYield.dat,
-                                        S_forest) {
+                                        S_forest,
+                                        alpha_df) {
 
   # THIS FUNCTION...
 
@@ -455,17 +457,17 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
 
   names(d_wp) <- names(r_CBiomass)
 
-  # Get exponential decay rates for wood products
-  alpha_dat <- read_xlsx("Templates/alpha_wp.xlsx",
-                         sheet = "Sheet1",
-                         range = "A1:F10",
-                         progress = F)
+  # Get exponential decay rates for wood products - this now set in runscript and passed as argument
+  # alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",
+  #                        sheet = "Sheet1",
+  #                        range = "A1:F10",
+  #                        progress = F)
 
   # Get decay rate parameters
   alpha <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {
       ## if distance to processing sites not passed, assume forestry products left in situ
-      alpha_a <- alpha_dat %>%
+      alpha_a <- alpha_df %>%
         filter(Type == "Unprocessed")
 
       if (mulch[[x]][1]==1) {
@@ -476,8 +478,8 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
           filter(Compartment != "Mulch")
       }
     } else {
-      alpha_a <- alpha_dat %>%
-        filter(Type == "Processed" | Compartment == "Foliage")
+      alpha_a <- alpha_df %>%
+        filter(Type == "Processed" | Compartment == "Foliage" | Compartment == "Roots")
     }
     alpha_wp <- alpha_a$alpha
     names(alpha_wp) <- stringr::str_replace(alpha_a$Var, "alpha_", "")
@@ -490,7 +492,7 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
   delta <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {
       ## if distance to processing sites not passed, assume forestry products left in situ
-      delta_a <- alpha_dat %>%
+      delta_a <- alpha_df %>%
         filter(Type == "Unprocessed")
 
       if (mulch[[x]][1]==1) {
@@ -505,8 +507,8 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
       names(delta_wp) <- stringr::str_replace(delta_a$Var, "alpha_", "")
 
     } else {
-      delta_a <- alpha_dat %>%
-        filter(Type == "Processed" | Compartment == "Foliage")
+      delta_a <- alpha_df %>%
+        filter(Type == "Processed" | Compartment == "Foliage" | Compartment == "Roots")
 
       delta_wp <- delta_a$delta
       names(delta_wp) <- stringr::str_replace(delta_a$Var, "alpha_", "")
@@ -772,7 +774,7 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
           filter(Spp == Spp_a,
                  YC == YC_a,
                  Age == t_harv_a) %>%
-          select(rho_Biofuel, rho_wpF, rho_wpM, rho_wpS, rho_wpO, rho_f)
+          select(rho_Biofuel, rho_wpF, rho_wpM, rho_wpS, rho_wpO, rho_f, rho_r)
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched
@@ -862,15 +864,17 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
                           S_wpM=CO2_wp[[x]][[y]]["wpM"] * exp(-tt*alpha[[x]]["wpM"]),
                           S_wpS=CO2_wp[[x]][[y]]["wpS"] * exp(-tt*alpha[[x]]["wpS"]),
                           S_wpO=CO2_wp[[x]][[y]]["wpO"] * exp(-tt*alpha[[x]]["wpO"]),
-                          S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]))
+                          S_f=CO2_wp[[x]][[y]]["f"] * exp(-tt*alpha[[x]]["f"]),
+                          S_r=CO2_wp[[x]][[y]]["r"] * exp(-tt*alpha[[x]]["r"]))
 
         res <- res %>%
           mutate(L_wpF = replace_na(lag(S_wpF, n = 1) - S_wpF, 0),
                  L_wpM = replace_na(lag(S_wpM, n = 1) - S_wpM, 0),
                  L_wpS = replace_na(lag(S_wpS, n = 1) - S_wpS, 0),
                  L_wpO = replace_na(lag(S_wpO, n = 1) - S_wpO, 0),
-                 L_f = replace_na(lag(S_f, n = 1) - S_f, 0)) %>%
-          select(t, L_wpF, L_wpM, L_wpS, L_wpO, L_f)
+                 L_f = replace_na(lag(S_f, n = 1) - S_f, 0),
+                 L_r = replace_na(lag(S_r, n = 1) - S_r, 0)) %>%
+          select(t, L_wpF, L_wpM, L_wpS, L_wpO, L_f, L_r)
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched

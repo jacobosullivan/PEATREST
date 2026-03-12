@@ -4,10 +4,12 @@
 \alias{plotL_AqC_forest_soils}
 \title{plotL_AqC_forest_soils}
 \usage{
-plotL_AqC_forest_soils(res)
+plotL_AqC_forest_soils(res, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

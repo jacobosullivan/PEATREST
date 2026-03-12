@@ -1,16 +1,17 @@
 ## 5f. CO2 loss from restored peatland
 
 #' CO2_loss_restoration
+#' @param forestry.dat UI forestry data
 #' @param R_tot estimated emissions rates
 #' @return L_indirect
 #' @export
-CO2_loss_restoration <- function(R_tot) {
+CO2_loss_restoration <- function(forestry.dat, R_tot) {
 
   ## This function will estimate the emissions from the site following harvesting and restoration interventions
   ## assuming a non-linear restoration of ecosystem function parameterised by the user
 
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  conv_val <- 0.99 # convergence value required by arbitrary convergent function
+  conv_val <- 0.999 # convergence value required by arbitrary convergent function
 
   AVG_WTD <- T # if TRUE remove partitioning into flooded and unflooded days and assume that annual average WTD can be used
   # Averages will work so long as R_CX ~ WTD is approximately linear. This is true for CO2 in the range WTD = [0,1m] but NOT for CH4

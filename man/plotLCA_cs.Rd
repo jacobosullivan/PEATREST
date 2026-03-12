@@ -4,12 +4,14 @@
 \alias{plotLCA_cs}
 \title{plotLCA}
 \usage{
-plotLCA_cs(res, t_payback_res, sum_areas = T)
+plotLCA_cs(res, t_payback_res, sum_areas = T, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
 
 \item{t_payback_res}{carbon payback estimate}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

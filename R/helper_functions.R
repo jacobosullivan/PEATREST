@@ -221,15 +221,15 @@ getCarbonDf <- function(S_forest,
 if (0){
   x <- seq(0,1,length.out=101)
   xy <- data.frame(x=rep(x,3),
-                   y=c(rest_dyn_mod(x,n=1,0,1,convThresh=0.99),
-                       rest_dyn_mod(x,n=2.25,0,1,convThresh=0.99),
-                       rest_dyn_mod(x,n=5,0,1,convThresh=0.99)),
+                   y=c(rest_dyn_mod(x,n=1,0,1,convThresh=0.999),
+                       rest_dyn_mod(x,n=2.25,0,1,convThresh=0.999),
+                       rest_dyn_mod(x,n=5,0,1,convThresh=0.999)),
                    n=rep(c(1,2.25,5), each=101))
 
   pAsym <- ggplot(xy, aes(x=x, y=y, col=factor(n))) +
     geom_line() +
     theme_bw() +
-    labs(col="n")
+    labs(x="Time since restoration", y="Relative ecosystem function", col=expression(n[rest]))
 
   png("../Figures/asymptotic_function.png",
       width=10.5, height=7.5, units="cm", res=300)

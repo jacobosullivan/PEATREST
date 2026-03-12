@@ -4,10 +4,12 @@
 \alias{plotS_forest}
 \title{plotS_forest}
 \usage{
-plotS_forest(res)
+plotS_forest(res, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

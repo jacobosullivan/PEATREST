@@ -4,9 +4,11 @@
 \alias{CO2_loss_restoration}
 \title{CO2_loss_restoration}
 \usage{
-CO2_loss_restoration(R_tot)
+CO2_loss_restoration(forestry.dat, R_tot)
 }
 \arguments{
+\item{forestry.dat}{UI forestry data}
+
 \item{R_tot}{estimated emissions rates}
 }
 \value{

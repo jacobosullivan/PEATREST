@@ -4,10 +4,12 @@
 \alias{plotL_peatland}
 \title{plotL_peatland}
 \usage{
-plotL_peatland(res)
+plotL_peatland(res, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

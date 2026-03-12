@@ -4,10 +4,12 @@
 \alias{plotCounterfactual}
 \title{plotCounterfactual}
 \usage{
-plotCounterfactual(res)
+plotCounterfactual(res, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

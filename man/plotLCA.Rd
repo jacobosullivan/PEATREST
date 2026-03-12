@@ -4,12 +4,14 @@
 \alias{plotLCA}
 \title{plotLCA}
 \usage{
-plotLCA(res, t_payback_res, sum_areas = T)
+plotLCA(res, t_payback_res, sum_areas = T, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
 
 \item{t_payback_res}{carbon flux intercept estimate}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

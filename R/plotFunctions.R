@@ -1,8 +1,9 @@
 #' plotS_forest
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotS_forest <- function(res) {
+plotS_forest <- function(res, plabs=NULL) {
 
   # THIS FUNCTION...
 
@@ -10,11 +11,16 @@ plotS_forest <- function(res) {
     filter(model == "Tree_growth") %>%
       mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
 
   p <- ggplot(df, aes(x=t, y=value)) +
     geom_line(col=hue_pal()(1)) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", linetype="")#, title="Forestry sequestration (3PG)")
 
@@ -23,9 +29,10 @@ plotS_forest <- function(res) {
 
 #' plotL_forest_soils
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotL_forest_soils <- function(res) {
+plotL_forest_soils <- function(res, plabs=NULL) {
 
   # THIS FUNCTION...
 
@@ -41,6 +48,12 @@ plotL_forest_soils <- function(res) {
     mutate(source = factor(source, levels=c("L_CO2", "L_CH4", "L_tot"))) %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df, aes(x=t, y=value, col=source, linetype=source)) +
@@ -51,7 +64,7 @@ plotL_forest_soils <- function(res) {
     scale_linetype_manual(values = c(1,1,2), guide = "none") +
     # scale_y_log10() +
     geom_vline(xintercept = 0, linetype=3) +
-    facet_grid(Area ~ Est) +#, scales="free_y") +
+    facet_grid(Area ~ Est, labeller = labeller(Est = panel_labels)) +#, scales="free_y") +
     theme_bw() +
     labs(x = "Time (yr)", y="Emissions (t CO2 eq.)", col="")#, title="Emissions from soils under trees")
   return(p)
@@ -59,9 +72,10 @@ plotL_forest_soils <- function(res) {
 
 #' plotCounterfactual
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotCounterfactual <- function(res) {
+plotCounterfactual <- function(res, plabs=NULL) {
 
   # THIS FUNCTION...
 
@@ -91,6 +105,12 @@ plotCounterfactual <- function(res) {
                     mutate(source = "S_tot")) %>%
     mutate(source = factor(source, levels = c("S_tot", "S_forest", "L_forest", "L_AqC")))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df, aes(x=t, y=value, col=factor(source))) +
@@ -98,7 +118,7 @@ plotCounterfactual <- function(res) {
     scale_x_continuous(limits = c(min(df$t), 200)) +
     scale_color_manual(values = c( "black", hue_pal()(3)),
                        labels = axis_labels) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", col="")#, title="Forestry sequestration (3PG)")
 
@@ -107,9 +127,10 @@ plotCounterfactual <- function(res) {
 
 #' plotL_forest
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotL_forest <- function(res) {
+plotL_forest <- function(res, plabs=NULL) {
 
   # THIS FUNCTION ...
 
@@ -136,6 +157,12 @@ plotL_forest <- function(res) {
 
   axis_labels1 <- parse(text = paste0(stringr::str_replace((levels(df_cont$source)), "\\_", "\\["),"]"))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   p1 <- ggplot(df_cont %>%
                  mutate(value = -value),
                aes(x=t, y=value, col=factor(source))) +
@@ -143,7 +170,7 @@ plotL_forest <- function(res) {
     scale_x_continuous(limits = c(0, 50)) +
     scale_color_manual(values = c( "black", hue_pal()(length(axis_labels1)-1)),
                          labels = axis_labels1) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Emissions (t CO2 eq.)", col="")#, title="Forestry biomass decay emissions")
 
@@ -170,19 +197,20 @@ plotL_forest <- function(res) {
     scale_y_continuous(transform = "log10") +
     scale_x_discrete(labels = axis_labels2) +
     scale_color_manual(values = c("black", hue_pal()(length(axis_labels2)-1))) +
-    facet_grid(Area ~ Est) +
+    facet_grid(Area ~ Est, labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1)) +
-    labs(x="", y="Emissions (t CO2)", col="")#, title="Discrete management emissions") +
+    labs(x="", y="Emissions (t CO2 eq.)", col="")#, title="Discrete management emissions") +
 
   return(list(p1, p2))
 }
 
 #' plotL_peatland
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotL_peatland <- function(res) {
+plotL_peatland <- function(res, plabs=NULL) {
 
 
   # THIS FUNCTION ...
@@ -205,7 +233,29 @@ plotL_peatland <- function(res) {
     arrange(t, Area, Est) %>%
     mutate(source = factor(source, levels = c("S_tot", "L_CO2", "L_CH4", "L_AqC")))
 
+  if (0) {
+    df %>%
+      filter(source == "S_tot", Area == "Area.1", source == "S_tot", Est == "Max")
+    df %>%
+      filter(source == "S_tot") %>%
+      group_by(Area, Est) %>%
+      summarise(t = t[min(which(value > 0))])
+  }
+
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
+
+  seq_thresh <- df %>%
+    group_by(Area, Est) %>%
+    filter(source == "S_tot",
+           value >= 0) %>%
+    summarise(t = min(t)-1) %>%
+    mutate(source=NA)
 
   p <- ggplot(df,
               aes(x=t, y=value, col=factor(source))) +
@@ -213,7 +263,8 @@ plotL_peatland <- function(res) {
     scale_color_manual(values = c("black", hue_pal()(length(axis_labels)-1)),
                        labels = axis_labels) +
     scale_x_continuous(limits = c(min(df$t), 120)) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    geom_vline(data=seq_thresh, aes(xintercept = t), col="black", linetype=2) +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq.)", col="")#, title="Peatland emissions")
 
@@ -222,9 +273,10 @@ plotL_peatland <- function(res) {
 
 #' plotL_AqC_forest_soils
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotL_AqC_forest_soils <- function(res) {
+plotL_AqC_forest_soils <- function(res, plabs=NULL) {
 
   # THIS FUNCTION ...
 
@@ -233,6 +285,11 @@ plotL_AqC_forest_soils <- function(res) {
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")),
            source = factor(source))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
   p <- ggplot(df,
@@ -241,7 +298,7 @@ plotL_AqC_forest_soils <- function(res) {
     scale_color_manual(values = hue_pal()(1),
                        labels = axis_labels) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Aquatic carbon loss (t CO2 eq.)", col="")#, title="DOC and POC losses")
 
@@ -250,9 +307,10 @@ plotL_AqC_forest_soils <- function(res) {
 
 #' plotL_AqC_peatland
 #' @param res LCA output
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotL_AqC_peatland <- function(res) {
+plotL_AqC_peatland <- function(res, plabs=NULL) {
 
   # THIS FUNCTION ...
 
@@ -260,6 +318,12 @@ plotL_AqC_peatland <- function(res) {
     filter(model == "Peatland_AqC_loss") %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")),
            source = factor(source))
+
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
 
   axis_labels <- parse(text = paste0(stringr::str_replace((levels(df$source)), "\\_", "\\["),"]"))
 
@@ -269,7 +333,7 @@ plotL_AqC_peatland <- function(res) {
     scale_color_manual(values = hue_pal()(1),
                        labels = axis_labels) +
     scale_x_continuous(limits = c(min(df$t), 200)) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Aquatic carbon loss (t CO2 eq.)", col="")#, title="DOC and POC losses")
 
@@ -279,9 +343,10 @@ plotL_AqC_peatland <- function(res) {
 #' plotLCA
 #' @param res LCA output
 #' @param t_payback_res carbon flux intercept estimate
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotLCA <- function(res, t_payback_res, sum_areas=T) {
+plotLCA <- function(res, t_payback_res, sum_areas=T, plabs=NULL) {
 
   # THIS FUNCTION..
 
@@ -322,10 +387,16 @@ plotLCA <- function(res, t_payback_res, sum_areas=T) {
   t_flux <- t_flux %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   p <- ggplot(res_sum %>% filter(t <= max(t_payback_res$t + 50)), aes(x=t, y=value, col=treatment)) +
     geom_line() +
     geom_vline(data=t_flux, aes(xintercept = t), linetype=2) +
-    facet_grid(Area ~ Est, scales="free_y") +
+    facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
     labs(x="Time since harvesting (yr)", y="Sequestration (t CO2 eq. / yr)", col="")#, title="LCA summary")
 
@@ -335,9 +406,10 @@ plotLCA <- function(res, t_payback_res, sum_areas=T) {
 #' plotLCA
 #' @param res LCA output
 #' @param t_payback_res carbon payback estimate
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotLCA_cs <- function(res, t_payback_res, sum_areas=T) {
+plotLCA_cs <- function(res, t_payback_res, sum_areas=T, plabs=NULL) {
 
   # THIS FUNCTION..
 
@@ -387,11 +459,17 @@ plotLCA_cs <- function(res, t_payback_res, sum_areas=T) {
   t_payback <- t_payback %>%
     mutate(Est = factor(Est, levels = c("Min", "Exp", "Max")))
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   p <- ggplot(res_cs %>% filter(t <= max(t_payback_res$t) + 50), aes(x=t, y=value_cs, col=treatment)) +
       geom_line() +
       scale_x_continuous(limits = c(min(res_sum$t), NA)) +
       geom_vline(data=t_payback , aes(xintercept = t), linetype=2) +
-      facet_grid(Area ~ Est, scales="free_y") +
+      facet_grid(Area ~ Est, scales="free_y", labeller = labeller(Est = panel_labels)) +
       theme_bw() +
       labs(x="Time since harvesting (yr)", y="Cummulative sequestration (t CO2 eq.)", col="")#, title="LCA summary")
 
@@ -401,9 +479,10 @@ plotLCA_cs <- function(res, t_payback_res, sum_areas=T) {
 #' plotES
 #' @param res LCA output
 #' @param t_payback_res carbon payback estimate
+#' @param plabs panel labels
 #' @return plot
 #' @export
-plotES <- function(res, t_payback_res) {
+plotES <- function(res, t_payback_res, plabs=NULL) {
 
   # THIS FUNCTION..
 
@@ -427,17 +506,30 @@ plotES <- function(res, t_payback_res) {
   t_flux$model <- "Sequestration (t CO2 eq. / (ha yr))"
   t_payback$model <- "Storage (t CO2 eq. / ha)"
 
+  res_sum <- res_sum %>%
+    filter(value >= -50)
+
+  res_cs <- res_cs %>%
+    filter(t >= 0)
+
   res0 <- bind_rows(res_sum, res_cs)
   t_payback0 <- bind_rows(t_flux, t_payback)
 
+  if (is.null(plabs)) {
+    panel_labels <- c(Min = "Min", Exp = "Exp", Max = "Max")
+  } else {
+    panel_labels <- c(Min = plabs[1], Exp = plabs[2], Max = plabs[3])
+  }
+
   p <- ggplot(res0 %>% filter(t <= max(t_payback_res$t) + 50),
-               aes(x=t, y=value, col=treatment)) +
+               aes(x=t, y=value, col=treatment, linetype=treatment)) +
     geom_line() +
     scale_x_continuous(limits = c(min(res_sum$t), NA)) +
+    scale_linetype_manual(values = c(2,1)) +
     geom_vline(data=t_payback0 , aes(xintercept = t), linetype=2) +
-    facet_wrap(~ model, scales="free_y") +
+    facet_wrap(~ model, scales="free", labeller = labeller(Est = panel_labels)) +
     theme_bw() +
-    labs(x="Time since harvesting (yr)", y="Value", col="")
+    labs(x="Time since harvesting (yr)", y="Value", col="", linetype="")
 
   return(p)
 }

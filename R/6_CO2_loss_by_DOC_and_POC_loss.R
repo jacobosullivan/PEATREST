@@ -86,14 +86,10 @@ CO2_loss_DOC_POC_RM <- function(forestry.dat,
 
   # THIS FUNCTION...
 
-  # CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  # CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
-  # pC_CH4 <- 0.75 # proportion of molecular weight of CH4 that is Carbon (12/16)
-
   rho_AqC <- forestry.dat$Aq.Carbon$rho_AqC # ratios from Smith et al. summed across DOC/POC
   R_AqC0 <- forestry.dat$Aq.Carbon$R_AqC0
-
-  # print(rho_AqC)
+  pAqC_CO2 <- forestry.dat$Aq.Carbon$pAqC_CO2
+  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
 
   if (forest_soils) { # select data structure emissions from forest soils
     L_AqC <- lapply(seq_along(L_gaseous), FUN = function(x) {
@@ -105,6 +101,7 @@ CO2_loss_DOC_POC_RM <- function(forestry.dat,
           summarise(L_tot = sum(value)) %>%
           mutate(L_AqC = L_tot * rho_AqC[y]) %>%
           mutate(L_AqC = ifelse(L_AqC < R_AqC0[y], R_AqC0[y], L_AqC)) %>%
+          mutate(L_AqC = L_AqC * pAqC_CO2[y]) %>% # multiply by proportion of AqC that ends up as CO2
           select(-L_tot) %>%
 
         return(df)
@@ -123,7 +120,8 @@ CO2_loss_DOC_POC_RM <- function(forestry.dat,
         df <- df %>%
           mutate(L_tot = L_CO2 + L_CH4) %>%
           mutate(L_AqC = L_tot * rho_AqC[y]) %>%
-          mutate(L_AqC = ifelse(L_AqC < R_AqC0[y], R_AqC0[y], L_AqC)) %>%
+          mutate(L_AqC = ifelse(L_AqC < R_AqC0[y] * A_harv[[x]][y], R_AqC0[y] * A_harv[[x]][y], L_AqC)) %>%
+          mutate(L_AqC = L_AqC * pAqC_CO2[y]) %>% # multiply by proportion of AqC that ends up as CO2
           select(t, L_AqC)
 
           return(df)

@@ -4,7 +4,7 @@
 \alias{Forestry_CO2_loss_detail_RM}
 \title{Forestry_CO2_loss_detail}
 \usage{
-Forestry_CO2_loss_detail_RM(forestry.dat, growthYield.dat, S_forest)
+Forestry_CO2_loss_detail_RM(forestry.dat, growthYield.dat, S_forest, alpha_df)
 }
 \arguments{
 \item{forestry.dat}{UI forestry data}
@@ -12,6 +12,8 @@ Forestry_CO2_loss_detail_RM(forestry.dat, growthYield.dat, S_forest)
 \item{growthYield.dat}{growth and yield data (estimated from CARBINE runs)}
 
 \item{S_forest}{3PG output}
+
+\item{alpha_df}{dataframe of decay rates / efficiencies}
 }
 \value{
 Estimated lifetime loss of carbon stored in forestry products

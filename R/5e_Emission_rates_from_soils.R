@@ -234,9 +234,6 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
   CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
 
-  sigma_zR <- c(Scots_pine = 0.12,
-                Sitka_spruce = 0.06) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
-
   # Extract inputs for easy access
   d_peat <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_peat")
   d_drain <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_drain")
@@ -246,16 +243,17 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   species <- c("Scots_pine", "Sitka_spruce")
   soil_type <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "soil_type")
+  d_root_max <- forestry.dat$Root.depth$d_root_max
+  rho_r_soil <- forestry.dat$Root.depth$rho_r_soil
+  sigma_zR <- 1 / rho_r_soil
+  sigma_zR <- sigma_zR[c(1,3,2)] # low density, high volume, high impact on hydrology
+  names(sigma_zR) <- c("Exp", "Min", "Max")
+  r_CBiomass <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "r_CBiomass")
 
-  # Rooting depth estimates from analysis of tree pulling data
-  # no indication of significant relationship to YC, though replication is low after subsetting by appropriate soil types
-  d_root_max <- 0.618
-
-  d_root <- lapply(seq_along(d_peat), FUN = function(x) {
-    d_root_a <- c(Exp = d_root_max, Min = d_root_max, Max = d_root_max)
-  })
-
-  names(d_root) <- names(d_peat)
+  if (0) { # 3PG version
+    sigma_zR <- c(Scots_pine = 0.12,
+                  Sitka_spruce = 0.06) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
+  }
 
   # Get rooting depths for water table estimates
   d_wt <- lapply(seq_along(YC), FUN = function(x) {
@@ -275,8 +273,10 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
         filter(Spp == Spp_a,
                YC == YC_a) %>%
         select(Age, B_r) %>%
-        mutate(V_r = B_r * sigma_zR[Spp_a],
-               d_wt = V_r/10000,
+        mutate(B_r = (r_CBiomass[[x]][y])^-1 * B_r) %>% # multiplication by 1/r_CBiomass due to the fact that B_r is in dry biomass, while root zone density was estimated using wet biomass
+        mutate(#V_r = B_r * sigma_zR[Spp_a], # 3PG version
+               V_r = B_r * sigma_zR[y],
+               d_wt = V_r / 10000,
                YC = YC_a0,
                YC_avail = YC_a)
 
@@ -306,8 +306,8 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
       pred$d_wt <- predict(fit, newdata = pred)
 
       pred <- pred %>%
-        mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt)) %>%
-        mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root[[x]][y]), min(d_peat[[x]][y], d_root[[x]][y]), d_wt))
+        mutate(d_wt = ifelse(d_wt > min(d_peat[[x]][y], d_root_max[y]), min(d_peat[[x]][y], d_root_max[y]), d_wt)) %>%
+        mutate(d_wt = ifelse(d_wt < d_drain[[x]][y], d_drain[[x]][y], d_wt))
 
       return(pred)
     })
@@ -325,6 +325,7 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
       # facet_wrap(~ Area) +
       theme_bw() +
       labs(x = "Stand age (yr)", y = "[Root / Water table] depth (m)", col="YC")
+    p
 
     ww <- 16
     hh <- 12

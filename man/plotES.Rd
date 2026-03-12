@@ -4,12 +4,14 @@
 \alias{plotES}
 \title{plotES}
 \usage{
-plotES(res, t_payback_res)
+plotES(res, t_payback_res, plabs = NULL)
 }
 \arguments{
 \item{res}{LCA output}
 
 \item{t_payback_res}{carbon payback estimate}
+
+\item{plabs}{panel labels}
 }
 \value{
 plot

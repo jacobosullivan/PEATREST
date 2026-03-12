@@ -2,6 +2,10 @@ library(readxl) # read excel files (UI)
 library(tidyverse) # dataframe manipulations
 library(purrr) # nested list indexing
 require(scales) # graphing colours
+require(foreach) # parallel sensitivity analysis
+require(doParallel) # parallel sensitivity analysis
+require(gridExtra)
+
 devtools::document()
 
 ################################################################################
@@ -10,14 +14,8 @@ devtools::document()
 
 path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1.xlsx" # select user input spreadsheet
 
-dat <- getData(path)
-
-## I need tests to ensure all data has been passed. If not, return error messages
-core.dat <- dat$core.dat
-forestry.dat <- dat$forestry.dat
+forestry.dat <- getData(path)$forestry.dat
 forestry.dat <- forestry.dat[1:(length(forestry.dat)-1)] # drop area 2
-construct.dat <- dat$construct.dat
-rm(dat)
 
 growthYield.dat <- getGrowthYieldData()
 
@@ -29,6 +27,21 @@ if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), 
     forestry.dat[[names(YC)[i]]]$YC <- YC[[i]]
   }
 }
+
+################################################################################
+############################# Load decay parameters ############################
+################################################################################
+
+alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",                                             sheet = "Sheet1",
+                      range = "A1:F10",
+                      progress = F)
+
+alpha_df$delta <- 0.5
+alpha_df <- as.data.frame(alpha_df)
+
+################################################################################
+########################## Get list of controlled pars #########################
+################################################################################
 
 get_all_names <- function(x) {
   if (!is.list(x)) {
@@ -104,18 +117,196 @@ if (1) { # remove variables only relevant to windfarm LCA. This will likely be r
                                               "fert")]
 }
 
-if (0) {
-  forestry.dat_unchange <- forestry.dat
+if (1) {
 
-  sensitivity_res <- c()
+  # Initialise parallel implementation
+  numCores <- min(length(unique(input_vars)), detectCores() - 1)
+  cl <- makeCluster(numCores)
+  registerDoParallel(cl)
 
-  for (i in input_vars) {
-    for (j in seq(0.2,2,by=0.2)) { # V1
-    # for (j in 2*10^seq(-1,2,length.out=10)) { # V2 logarithmic DOESN'T WORK, DRIVE SUB-MODELS INTO IMPOSSIBLE PARAMETER SPACE
+  # Path to the folder containing your R scripts
+  script_dir <- "R/"
+
+  # Get all R files in the directory
+  r_files <- list.files(script_dir, pattern = "\\.R$", full.names = TRUE)
+
+  # Export the list of files to all workers
+  clusterExport(cl, varlist = c("r_files", "forestry.dat"))
+
+  # Source the files on each worker
+  clusterEvalQ(cl, {
+    for (f in r_files) {
+      tryCatch(
+        source(f, local = TRUE),
+        error = function(e) message("Error sourcing ", f, ": ", e$message)
+      )
+    }
+  })
+
+  # Run model in parallel
+  sensitivity_resA <- foreach(i = input_vars,
+                              .packages = c("readxl", "tidyverse", "purrr"),
+                              .combine=rbind) %dopar% {
+
+    # forestry.dat_unchange <- forestry.dat
+    res_j <- c()
+
+    for (j in seq(0.2,2,by=0.2)) {
 
       # Find focal input var in nested list and modify (Exp value only)
       var_ind <- find_index_paths(forestry.dat, i)
-      forestry.dat[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1] <- j*forestry.dat[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1]
+
+      forestry.dat_j <- forestry.dat
+      forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1] <- j*forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1]
+
+      ################################################################################
+      ##################### CO2 sequestration loss from Forestry #####################
+      ################################################################################
+
+      S_forest <- C_sequest_in_trees_RM(forestry.dat_j)
+
+      ################################################################################
+      ###################### CO2 loss from soils under Forestry ######################
+      ################################################################################
+
+      skipIteration <- F
+      tryCatch(L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat_j,
+                                                                   growthYield.dat),
+        error = function(e) skipIteration <<- T)
+      if (skipIteration) next
+
+
+      ################################################################################
+      ################ Aquatic carbon loss from soils under Forestry #################
+      ################################################################################
+
+      L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat_j,
+                                                L_forest_soils,
+                                                forest_soils = T)
+
+      ################################################################################
+      ############ Harvesting/Restoration emissions and wood product decay ###########
+      ################################################################################
+
+      L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat_j,
+                                              growthYield.dat,
+                                              S_forest,
+                                              alpha_df)
+
+      ################################################################################
+      ########################## Emissions rates from soils ##########################
+      ################################################################################
+
+      R_tot <- Emissions_rates_soils_RM(forestry.dat_j)
+
+      ################################################################################
+      ############################### Loss of Soil CO2 ###############################
+      ################################################################################
+
+      L_peatland <- CO2_loss_restoration(R_tot,
+                                         forestry.dat_j)
+
+      ################################################################################
+      ###################### Aquatic carbon loss from peatland #######################
+      ################################################################################
+
+      L_AqC_peatland <- CO2_loss_DOC_POC_RM(forestry.dat_j,
+                                            L_peatland,
+                                            forest_soils = F)
+
+      ################################################################################
+      ######################### CO2 payback time estimation ##########################
+      ################################################################################
+
+      res <- getCarbonDf(S_forest,
+                         L_forest_soils,
+                         L_AqC_forest_soils,
+                         L_forest,
+                         L_peatland,
+                         L_AqC_peatland)
+
+      t_payback_res <- Carbon_payback_time(res, sum_areas = F)
+
+      if (0) {
+        # p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+        # p_L_forest[[1]]
+
+        # plotL_AqC_peatland(res %>% filter(Est == "Exp"))
+        # grid.arrange(p_L_forest[[2]],
+        plotLCA_cs(res %>% filter(Est == "Exp"),
+                t_payback_res %>% filter(Est == "Exp"),
+                sum_areas = F,
+                plabs = paste0("YC", forestry.dat_j$Area.1$YC[c(2,1,3)]))#)
+      }
+
+      res_j <- rbind(res_j,
+                     data.frame(var = i,
+                                sca = j,
+                                val = forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1],
+                                t_flux = (t_payback_res %>%
+                                            filter(Est == "Exp", metric == "t_flux"))$t,
+                                t_payback = (t_payback_res %>%
+                                               filter(Est == "Exp", metric == "t_payback"))$t))
+
+    }
+    rownames(res_j) <- NULL
+    res_j
+  }
+
+  # Stop the cluster
+  stopCluster(cl)
+
+  ## Repeat for decay parameters
+
+  # Initialise parallel implementation
+  numCores <- min(2*nrow(alpha_df), detectCores() - 1)
+  cl <- makeCluster(numCores)
+  registerDoParallel(cl)
+
+  # Path to the folder containing your R scripts
+  script_dir <- "R/"
+
+  # Get all R files in the directory
+  r_files <- list.files(script_dir, pattern = "\\.R$", full.names = TRUE)
+
+  # Export the list of files to all workers
+  clusterExport(cl, varlist = c("r_files", "forestry.dat", "alpha_df"))
+
+  # Source the files on each worker
+  clusterEvalQ(cl, {
+    for (f in r_files) {
+      tryCatch(
+        source(f, local = TRUE),
+        error = function(e) message("Error sourcing ", f, ": ", e$message)
+      )
+    }
+  })
+
+  sensitivity_resB <- foreach(i = 1:(2*nrow(alpha_df)),
+                              .packages = c("readxl", "tidyverse", "purrr"),
+                              .combine=rbind) %dopar% {
+
+    res_j <- c()
+
+    if (i >= (nrow(alpha_df)+1)) {
+      k <- i - nrow(alpha_df)
+      l <- 6
+    } else {
+      k <- i
+      l <- 4
+    }
+
+    var_name <- alpha_df$Var[k]
+    if (i > nrow(alpha_df)) {
+      var_name <- stringr::str_replace(var_name, "alpha", "delta")
+    }
+
+    for (j in seq(0.2,2,by=0.2)) {
+
+      alpha_df_j <- alpha_df
+
+      alpha_df_j[k,l] <- alpha_df_j[k,l] * j
+
 
       ################################################################################
       ##################### CO2 sequestration loss from Forestry #####################
@@ -127,8 +318,7 @@ if (0) {
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
-      L_forest_soils <- Emissions_rates_forestry_soils_RM(core.dat,
-                                                          forestry.dat,
+      L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat,
                                                           growthYield.dat)
 
       ################################################################################
@@ -143,24 +333,23 @@ if (0) {
       ############ Harvesting/Restoration emissions and wood product decay ###########
       ################################################################################
 
-      L_forest <- Forestry_CO2_loss_detail_RM(core.dat,
-                                              forestry.dat,
+      L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat,
                                               growthYield.dat,
-                                              S_forest)
+                                              S_forest,
+                                              alpha_df_j)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
       ################################################################################
 
-      R_tot <- Emissions_rates_soils_RM(core.dat = core.dat,
-                                        forestry.dat = forestry.dat)
+      R_tot <- Emissions_rates_soils_RM(forestry.dat)
 
       ################################################################################
       ############################### Loss of Soil CO2 ###############################
       ################################################################################
 
-      L_peatland <- CO2_loss_restoration(core.dat = core.dat,
-                                         R_tot = R_tot)
+      L_peatland <- CO2_loss_restoration(R_tot,
+                                         forestry.dat)
 
       ################################################################################
       ###################### Aquatic carbon loss from peatland #######################
@@ -183,36 +372,50 @@ if (0) {
 
       t_payback_res <- Carbon_payback_time(res, sum_areas = F)
 
-      sensitivity_res <- rbind(sensitivity_res,
-                               data.frame(var = i,
-                                          sca = j,
-                                          val = forestry.dat[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1],
-                                          t_flux = (t_payback_res %>%
-                                                      filter(Est == "Exp", metric == "t_flux"))$t,
-                                          t_payback = (t_payback_res %>%
-                                                         filter(Est == "Exp", metric == "t_payback"))$t))
+      if (0) {
+        p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"))
+        # p_L_forest[[1]]
+        # p_L_forest[[2]]
+        pLCA <- plotLCA(res %>% filter(Est == "Exp"), t_payback_res %>% filter(Est == "Exp"), sum_areas = F)
+        pLCA_cs <- plotLCA_cs(res %>% filter(Est == "Exp"), t_payback_res %>% filter(Est == "Exp"), sum_areas = F)
+        # pLCA
+        # pLCA_cs
+        grid.arrange(p_L_forest[[1]], pLCA_cs)
+      }
 
-      # reset input vars
-      forestry.dat <- forestry.dat_unchange
+      res_j <- rbind(res_j,
+                     data.frame(var = var_name,
+                                sca = j,
+                                val = alpha_df_j[k,l],
+                                t_flux = (t_payback_res %>%
+                                            filter(Est == "Exp", metric == "t_flux"))$t,
+                                t_payback = (t_payback_res %>%
+                                               filter(Est == "Exp", metric == "t_payback"))$t))
+
+
     }
+    rownames(res_j) <- NULL
+    res_j
   }
+  # Stop the cluster
+  stopCluster(cl)
 
-  write.csv(sensitivity_res, "../Data/sensitivity_res.csv", row.names=F)
+  sensitivity_res <- rbind(sensitivity_resA, sensitivity_resB)
+  write.csv(sensitivity_res, "../Data/sensitivity_res_YC8.csv", row.names=F)
 } else {
-  sensitivity_res <- read.csv("../Data/sensitivity_res.csv")
+  sensitivity_res <- read.csv("../Data/sensitivity_res_YC8.csv")
 }
 
 sensitivity_res <- sensitivity_res %>%
   group_by(var) %>%
-  mutate(t_flux_norm = (t_flux / t_flux[sca==1.0]) - 1,
-         t_payback_norm = (t_payback / t_payback[sca==1.0]) - 1)
+  mutate(t_flux_norm = (t_flux / t_flux[sca==1.0]),
+         t_payback_norm = (t_payback / t_payback[sca==1.0]))
 
 sensitivity_res <- sensitivity_res %>%
   filter(!var %in% c("d_biofuel",
                      "d_wpF",
                      "d_wpM",
                      "d_wpS",
-                     "dist_biofuel_plant",
                      "E_fert",
                      "E_mulch",
                      "E_turf_import",
@@ -221,42 +424,109 @@ sensitivity_res <- sensitivity_res %>%
 
 vars0 <- unique(sensitivity_res$var)
 vars1 <- vars0
-vars1[11] <- "epsilon_P"
-vars1[12] <- "t_0"
-vars1[14] <- "epsilon_B"
-vars1[15] <- "rho_C:B"
-vars1[17] <- "t_rest"
-vars1[18] <- "n_rest"
-vars1[19] <- "W_drain"
-vars1[20] <- "W_rest"
-
+vars1[1] <- "E_grid"
+vars1[9] <- "P_AqC-CO2"
+vars1[10] <- "d_rmax"
+vars1[11] <- "rho_rsoil"
+vars1[12] <- "d_p"
+vars1[14] <- "d_d"
+vars1[15] <- "epsilon_P"
+vars1[18] <- "epsilon_B"
+vars1[19] <- "rho_C:B"
+vars1[21] <- "t_rest"
+vars1[22] <- "n_rest"
+vars1[23] <- "W_drain"
+vars1[24] <- "W_rest"
 vars1 <- stringr::str_replace(vars1, "\\_", "\\[")
 vars1[grep("\\[", vars1)] <- paste0(vars1[grep("\\[", vars1)],"]")
+data.frame(vars0,vars1)
+
 axis_labels <- parse(text = vars1)
 names(axis_labels) <- vars0
 
-axis_labels <- as.list(sapply(seq_along(vars1), FUN = function(x) {
+axis_labels <- sapply(seq_along(vars1), FUN = function(x) {
   res <- vars1[x]
   names(res) <- vars0[x]
   return(res)
-}))
+})
 
-png("../Figures/sensitivity_t_flux.png", width=25, height=16, units="cm", res=300)
-# ggplot(sensitivity_res, aes(x=val, y=100*t_flux_norm)) +
-ggplot(sensitivity_res, aes(x=sca, y=100*t_flux_norm)) +
-  geom_line() +
-  facet_wrap(var ~ ., scales="free", labeller = as_labeller(axis_labels, default = label_parsed)) +
+sensitivity_res_lin <- sensitivity_res %>%
+  group_by(var) %>%
+  summarise(sns_lin_flux = coef(lm(t_flux_norm ~ sca))[2],
+            sns_lin_payback = coef(lm(t_payback_norm ~ sca))[2],
+            sns_lin_flux_R = summary(lm(t_flux_norm ~ sca))$r.squared,
+            sns_lin_payback_R = summary(lm(t_payback_norm ~ sca))$r.squared)
+
+sensitivity_res_lin <- left_join(sensitivity_res_lin, data.frame(var=vars0, var1 = vars1), by="var")
+
+sensitivity_res_lin_flux <- sensitivity_res_lin %>%
+  arrange(desc(sns_lin_flux)) %>%
+  mutate(var = factor(var, levels=unique(var))) %>%
+  filter(sns_lin_flux != 0)
+
+sensitivity_res_lin_payback <- sensitivity_res_lin %>%
+  arrange(desc(sns_lin_payback)) %>%
+  mutate(var = factor(var, levels=unique(var))) %>%
+  filter(sns_lin_payback != 0)
+
+p1 <- ggplot(sensitivity_res_lin_flux, aes(x=var, y=sns_lin_flux)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(labels = parse(text = sensitivity_res_lin_flux$var1)) +
   theme_bw() +
-  # labs(x="Value", y=expression(paste(Delta, t[flux], " (%)")))
-  labs(x="Scaling parameter", y=expression(paste(Delta, t[flux], " (%)")))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1)) +
+  labs(x="", y=expression(paste(d,t[flux],"/",d,Iota))) +
+  scale_y_continuous(limits=c(min(c(sensitivity_res_lin_flux$sns_lin_flux,sensitivity_res_lin_payback$sns_lin_payback)),max(c(sensitivity_res_lin_flux$sns_lin_flux,sensitivity_res_lin_payback$sns_lin_payback))))
+
+p2 <- ggplot(sensitivity_res_lin_payback, aes(x=var, y=sns_lin_payback)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(labels = parse(text = sensitivity_res_lin_payback$var1)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1)) +
+  labs(x="", y=expression(paste(d,t[payback],"/",d,Iota))) +
+  scale_y_continuous(limits=c(min(c(sensitivity_res_lin_flux$sns_lin_flux,sensitivity_res_lin_payback$sns_lin_payback)),max(c(sensitivity_res_lin_flux$sns_lin_flux,sensitivity_res_lin_payback$sns_lin_payback))))
+
+png("../Figures/LCA implementation/V7/sensitivity_slopes_YC8.png", width=16, height=16, units="cm", res=300)
+grid.arrange(p1,p2)
 dev.off()
 
-png("../Figures/sensitivity_t_payback.png", width=25, height=16, units="cm", res=300)
-# ggplot(sensitivity_res, aes(x=val, y=100*t_payback_norm)) +
-ggplot(sensitivity_res, aes(x=sca, y=100*t_payback_norm)) +
+sc <- 1
+png("../Figures/LCA implementation/V7/sensitivity_t_flux_YC8.png", width=sc*24, height=sc*28, units="cm", res=300)
+ggplot(sensitivity_res %>%
+         filter(var %in% sensitivity_res_lin_flux$var) %>%
+         mutate(var = factor(var, levels = sensitivity_res_lin_flux$var)),
+       aes(x=val, y=t_flux_norm)) +
   geom_line() +
-  facet_wrap(var ~ ., scales="free") +
+  facet_wrap(var ~ .,
+             scales="free",
+             labeller = as_labeller(axis_labels[as.character(sensitivity_res_lin_flux$var)], default = label_parsed),
+             ncol = 4) +
   theme_bw() +
-  # labs(x="Value", y=expression(paste(Delta, t[payback], " (%)")))
-  labs(x="Scaling parameter", y=expression(paste(Delta, t[payback], " (%)")))
+  theme(axis.title.x = element_text(size = 20),  # X-axis label font size
+        axis.title.y = element_text(size = 20),
+        axis.text.x  = element_text(size = 12),  # X-axis tick labels font size
+        axis.text.y  = element_text(size = 12),
+        strip.text = element_text(size = 16)) +
+  labs(x="Value", y=expression(paste(t[flux1], "/", t[flux0]))) +
+  geom_hline(yintercept = 1, col="grey", linetype=2)
 dev.off()
+
+png("../Figures/LCA implementation/V7/sensitivity_t_payback_YC8.png", width=sc*1.05*24, height=sc*(7/5)*28, units="cm", res=300)
+ggplot(sensitivity_res %>%
+         filter(var %in% sensitivity_res_lin_payback$var) %>%
+         mutate(var = factor(var, levels = sensitivity_res_lin_payback$var)),
+       aes(x=val, y=t_payback_norm)) +
+  geom_line() +
+  facet_wrap(var ~ .,
+             scales="free",
+             labeller = as_labeller(axis_labels[as.character(sensitivity_res_lin_payback$var)], default = label_parsed),
+             ncol = 4) +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 20),  # X-axis label font size
+        axis.title.y = element_text(size = 20),
+        axis.text.x  = element_text(size = 12),  # X-axis tick labels font size
+        axis.text.y  = element_text(size = 12),
+        strip.text = element_text(size = 16)) +
+  labs(x="Value", y=expression(paste(t[payback1], "/", t[payback0]))) +
+  geom_hline(yintercept = 1, col="grey", linetype=2)
+dev.off()
+
