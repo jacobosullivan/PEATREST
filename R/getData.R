@@ -4,7 +4,7 @@
 #' @export
 getData <- function(path) {
 
-  df_struct <- read.csv("Templates/CCWoP_vars.csv") %>%
+  df_struct <- read.csv("Templates/PEATREST_vars.csv") %>%
     mutate(Input.name=str_replace(Input.name, "\\ {2,}", "\\ ")) %>% # remove non-standard formatting
     mutate(Input.name=str_replace(Input.name, "\\ +$", ""))# remove non-standard formatting
 

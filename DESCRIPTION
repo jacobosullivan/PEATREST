@@ -1,9 +1,9 @@
-Package: CCWoP
-Title: R implementation of the Full carbon calculator for windfarms on peatlands
+Package: PEATREST
+Title: A life cycle assessment tool for forest-to-bog restoration
 Version: 0.0.0.9000
 Authors@R: 
     person("Jacob", "O'Sullivan", , "j.osullivan@zoho.com", role = c("aut", "cre"))
-Description: Full carbon balance calculation for installation of windfarms on peatlands with accounting of adjacent deforestation
+Description: Carbon mitigation timescales estimated for peatland restoration projects
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

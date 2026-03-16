@@ -1,3 +1,3 @@
-# R version of the Full carbon calculator for windfarms on peatlands (v2.14.1)
+# PEATREST: A lifecycle assessment (LCA) model of carbon fluxes for restored afforested peatlands
 
-## Jacob O'Sullivan 2025
+## Jacob O'Sullivan 2026

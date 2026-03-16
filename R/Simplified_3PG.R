@@ -13,6 +13,7 @@ ForestSequestrationMod <- function(input.dat) {
   # Extract input variables for easy access
   YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
+  species <- c("Scots_Pine", "Sitka_Spruce")
 
   ## Estimate NPP_max for full 3PG simulation based on YC
   NPP_Max <- lapply(1:length(grep("Area", names(input.dat))),
