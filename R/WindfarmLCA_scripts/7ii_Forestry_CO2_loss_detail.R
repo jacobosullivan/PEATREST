@@ -2,11 +2,11 @@
 
 #' Forestry_CO2_loss_detail
 #' @param core.dat UI data
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return Estimated lifetime loss of carbon sequestration
 #' @export
 Forestry_CO2_loss_detail <- function(core.dat,
-                                     forestry.dat) {
+                                     input.dat) {
 
   # THIS FUNCTION...
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
@@ -35,14 +35,14 @@ Forestry_CO2_loss_detail <- function(core.dat,
 
   ## Loss of carbon sequestration due to felling of forestry for wind farm
   C_wpry <- C_sequest_in_trees(core.dat,
-                                   forestry.dat)
+                                   input.dat)
 
-  A_felled <- list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "n_turb"),
-                      l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "A_harv_turb"),
+  A_felled <- list_op(l1 = map(input.dat[grep("Area", names(input.dat))], "n_turb"),
+                      l2 = map(input.dat[grep("Area", names(input.dat))], "A_harv_turb"),
                       func = "*")
 
-  A_replant <- list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "n_turb"),
-                       l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "A_replant_turb"),
+  A_replant <- list_op(l1 = map(input.dat[grep("Area", names(input.dat))], "n_turb"),
+                       l2 = map(input.dat[grep("Area", names(input.dat))], "A_replant_turb"),
                        func = "*")
 
   C_seq_loss_felled <- lapply(list_op(l1 = A_felled,
@@ -66,7 +66,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
 
   # Extract and restructure data for easy access
   # JDebug: replace the following with this:
-  # e.g. E_fossil_mix <- rep(list(core.dat$Counterfactual$E_fossil_mix), length = length(grep("Area", names(forestry.dat))))
+  # e.g. E_fossil_mix <- rep(list(core.dat$Counterfactual$E_fossil_mix), length = length(grep("Area", names(input.dat))))
 
   C_seq_soil_df <- C_seq_soil()
   soil_seq_rate <- list()
@@ -77,24 +77,24 @@ Forestry_CO2_loss_detail <- function(core.dat,
   dist_fuel_plant <- list()
 
   ii <- 1
-  for (i in grep("Area", names(forestry.dat))) {
-    soil_seq_rate[[ii]] <- C_seq_soil_df$seq_rate[which(C_seq_soil_df$Soil_type == forestry.dat[[i]]$soil_type[1])]
+  for (i in grep("Area", names(input.dat))) {
+    soil_seq_rate[[ii]] <- C_seq_soil_df$seq_rate[which(C_seq_soil_df$Soil_type == input.dat[[i]]$soil_type[1])]
     t_wf_by_area[[ii]] <- core.dat$Windfarm$t_wf
-    emissions_from_felling[[ii]] <- forestry.dat$Emissions$E_harv / 1e6 # unit conversion
-    emissions_from_transport[[ii]] <- forestry.dat$Emissions$E_transport / 1e6 # unit conversion
+    emissions_from_felling[[ii]] <- input.dat$Emissions$E_harv / 1e6 # unit conversion
+    emissions_from_transport[[ii]] <- input.dat$Emissions$E_transport / 1e6 # unit conversion
     fossil_fuel_emissions_factor[[ii]] <- core.dat$Counterfactual$E_fossil_mix
-    dist_fuel_plant[[ii]] <- forestry.dat$Windfarm$dist_biofuel_plant
+    dist_fuel_plant[[ii]] <- input.dat$Windfarm$dist_biofuel_plant
     ii <- ii + 1
   }
-  names(soil_seq_rate) <- grep("Area", names(forestry.dat), value = T)
-  names(t_wf_by_area) <- grep("Area", names(forestry.dat), value = T)
-  names(emissions_from_felling) <- grep("Area", names(forestry.dat), value = T)
-  names(emissions_from_transport) <- grep("Area", names(forestry.dat), value = T)
-  names(fossil_fuel_emissions_factor) <- grep("Area", names(forestry.dat), value = T)
-  names(dist_fuel_plant) <- grep("Area", names(forestry.dat), value = T)
+  names(soil_seq_rate) <- grep("Area", names(input.dat), value = T)
+  names(t_wf_by_area) <- grep("Area", names(input.dat), value = T)
+  names(emissions_from_felling) <- grep("Area", names(input.dat), value = T)
+  names(emissions_from_transport) <- grep("Area", names(input.dat), value = T)
+  names(fossil_fuel_emissions_factor) <- grep("Area", names(input.dat), value = T)
+  names(dist_fuel_plant) <- grep("Area", names(input.dat), value = T)
 
   L_floor_bfr_replant <- list_op(l1 = A_felled,
-                                 l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_replant"),
+                                 l2 = map(input.dat[grep("Area", names(input.dat))], "t_replant"),
                                  l3 = soil_seq_rate,
                                  func = "*")
 
@@ -102,7 +102,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
                                               l2 = A_replant,
                                               func = "-"),
                                  l2 = list_op(l1 = t_wf_by_area,
-                                              l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_replant"),
+                                              l2 = map(input.dat[grep("Area", names(input.dat))], "t_replant"),
                                               func = "-"),
                                  l3 = soil_seq_rate,
                                  func = "*")
@@ -113,8 +113,8 @@ Forestry_CO2_loss_detail <- function(core.dat,
                     FUN = function(x) x * CO2_C)
 
   ## Emissions from harvesting operations (from growth yield table)
-  vol_harv <- lapply(list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv"),
-                             l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
+  vol_harv <- lapply(list_op(l1 = map(input.dat[grep("Area", names(input.dat))], "t_harv"),
+                             l2 = map(input.dat[grep("Area", names(input.dat))], "soil_type"),
                              func = "c"),
                      FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$volume)
 
@@ -127,7 +127,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
   W_felled <- list_op(l1 = list_op(l1 = A_felled,
                                    l2 = C_wpry$C_tot,
                                    func = "*"),
-                      l2 = lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "r_CBiomass"),
+                      l2 = lapply(map(input.dat[grep("Area", names(input.dat))], "r_CBiomass"),
                                   FUN = function(x) {
                                     x <- x[c(1,3,2)] # re-arrange Min, Max
                                     names(x) <- c("Exp", "Min", "Max")
@@ -139,13 +139,13 @@ Forestry_CO2_loss_detail <- function(core.dat,
                              FUN = function(x) x * rho_felled$biofuel)
 
   W_pow_val_felled <- list_op(l1 = W_felled_biofuel,
-                              l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "e_felled_biofuel"),
+                              l2 = map(input.dat[grep("Area", names(input.dat))], "e_felled_biofuel"),
                               func = "*")
 
   # Get 1/0 for Yes/No converting felled forestry to biofuel
   # JDebug: this can be handled instead via rho_felled
   # JDebug: THIS DOESN'T WORK ANYMORE AS I HAVE REMOVED felled_biofuel FROM THE INPUT LIST!!!
-  felled_biofuel <- lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "felled_biofuel"),
+  felled_biofuel <- lapply(map(input.dat[grep("Area", names(input.dat))], "felled_biofuel"),
                            FUN = function(x) {
                              if (x[1]==2) { # not used as biofuel
                                return(c(Exp = 0, Min = 0, Max = 0))
@@ -172,7 +172,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
   W_replant <- list_op(l1 = list_op(l1 = A_replant,
                                     l2 = C_wpry$seq_pot_replant,
                                     func = "*"),
-                       l2 = lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "r_CBiomass"),
+                       l2 = lapply(map(input.dat[grep("Area", names(input.dat))], "r_CBiomass"),
                                    FUN = function(x) {
                                      x <- x[c(1,3,2)] # re-arrange Min, Max
                                      names(x) <- c("Exp", "Min", "Max")
@@ -184,7 +184,7 @@ Forestry_CO2_loss_detail <- function(core.dat,
                               FUN = function(x) x * rho_replant$biofuel)
 
   W_pow_val_replant <- list_op(l1 = W_replant_biofuel,
-                               l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "e_felled_biofuel"),
+                               l2 = map(input.dat[grep("Area", names(input.dat))], "e_felled_biofuel"),
                                func = "*")
 
   # Assume that if harvested biomass converted to biofuel, so is replanted biomass...
@@ -290,13 +290,13 @@ Forestry_CO2_loss_detail <- function(core.dat,
 
 # 7ii. Forestry CO2 loss - detail restoration model
 #' Forestry_CO2_loss_detail
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @param S_forest 3PG output
 #' @param alpha_df dataframe of decay rates / efficiencies
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
-Forestry_CO2_loss_detail_RM <- function(forestry.dat,
+Forestry_CO2_loss_detail_RM <- function(input.dat,
                                         growthYield.dat,
                                         S_forest,
                                         alpha_df) {
@@ -305,26 +305,26 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
 
   # Extract input variables for easy access
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], "A_harv")
-  t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv")
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
-  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow")
+  A_harv <- map(input.dat[grep("Area", names(input.dat))], "A_harv")
+  t_harv <- map(input.dat[grep("Area", names(input.dat))], "t_harv")
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  t_fallow <- map(input.dat[grep("Area", names(input.dat))], .f = "t_fallow")
 
   # Emissions factors
-  E_transport <- rep(list(forestry.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 km-1 to t CO2 km-3
-  E_harv <- rep(list(forestry.dat$Emissions$E_harv / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
-  E_mulch <- rep(list(forestry.dat$Emissions$E_mulch / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_dam <- rep(list(forestry.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_bund <- rep(list(forestry.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_smooth <- rep(list(forestry.dat$Emissions$E_smooth / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_turf_import <- rep(list(forestry.dat$Emissions$E_turf_import / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_turf_local <- rep(list(forestry.dat$Emissions$E_turf_local / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_fert <- rep(list(forestry.dat$Emissions$E_fert / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_transport <- rep(list(input.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(input.dat)))) # convert from g CO2 km-1 to t CO2 km-3
+  E_harv <- rep(list(input.dat$Emissions$E_harv / 1e3), length = length(grep("Area", names(input.dat)))) # convert from g CO2 m-3 to t CO2 m-3
+  E_mulch <- rep(list(input.dat$Emissions$E_mulch / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_dam <- rep(list(input.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_bund <- rep(list(input.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_smooth <- rep(list(input.dat$Emissions$E_smooth / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_turf_import <- rep(list(input.dat$Emissions$E_turf_import / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_turf_local <- rep(list(input.dat$Emissions$E_turf_local / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_fert <- rep(list(input.dat$Emissions$E_fert / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
 
   # Management strategy
-  timber_removed <- map(forestry.dat[grep("Area", names(forestry.dat))], "timber_removed")
-  mulch <- map(forestry.dat[grep("Area", names(forestry.dat))], "mulch")
+  timber_removed <- map(input.dat[grep("Area", names(input.dat))], "timber_removed")
+  mulch <- map(input.dat[grep("Area", names(input.dat))], "mulch")
   mulch <- lapply(seq_along(mulch), FUN = function(x) {
     if (is.null(mulch[[x]])) { # mulch drop down depends on whether user has selected to leave timber in situ
       mulch[[x]] <- c("Exp" = 2, "Min" = NA, "Max" = NA)
@@ -332,12 +332,12 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
     return(mulch[[x]])
   })
   names(mulch) <- names(timber_removed)
-  dam <- map(forestry.dat[grep("Area", names(forestry.dat))], "dam")
-  bund <- map(forestry.dat[grep("Area", names(forestry.dat))], "bund")
-  smooth <- map(forestry.dat[grep("Area", names(forestry.dat))], "smooth")
-  turf_import <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_import")
-  turf_local <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_local")
-  fert <- map(forestry.dat[grep("Area", names(forestry.dat))], "fert")
+  dam <- map(input.dat[grep("Area", names(input.dat))], "dam")
+  bund <- map(input.dat[grep("Area", names(input.dat))], "bund")
+  smooth <- map(input.dat[grep("Area", names(input.dat))], "smooth")
+  turf_import <- map(input.dat[grep("Area", names(input.dat))], "turf_import")
+  turf_local <- map(input.dat[grep("Area", names(input.dat))], "turf_local")
+  fert <- map(input.dat[grep("Area", names(input.dat))], "fert")
 
   # Set emissions factors to zero for management strategies not selected
   E_transport <- lapply(seq_along(E_transport), FUN = function(x) {
@@ -413,9 +413,9 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
   names(E_fert) <- names(YC)
 
   # Biofuel handling
-  r_CBiomass <- map(forestry.dat[grep("Area", names(forestry.dat))], "r_CBiomass")
-  e_felled_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_felled_biofuel")
-  e_biofuel_plant <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_biofuel_plant")
+  r_CBiomass <- map(input.dat[grep("Area", names(input.dat))], "r_CBiomass")
+  e_felled_biofuel <- map(input.dat[grep("Area", names(input.dat))], "e_felled_biofuel")
+  e_biofuel_plant <- map(input.dat[grep("Area", names(input.dat))], "e_biofuel_plant")
   e_biofuel_plant <- lapply(e_biofuel_plant, FUN = function(x) {
     if (is.null(x)) {
       return(c(Exp = 0, Min = 0, Max = 0)) # add zero vector in case p_biofuel not passed
@@ -424,14 +424,14 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
     }
   })
 
-  E_grid_mix <- rep(list(forestry.dat$Emissions$E_grid_mix), length = length(grep("Area", names(forestry.dat))))
+  E_grid_mix <- rep(list(input.dat$Emissions$E_grid_mix), length = length(grep("Area", names(input.dat))))
   names(E_grid_mix) <- names(r_CBiomass)
 
   # Wood product handling
-  d_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_biofuel")
-  d_wpF <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpF")
-  d_wpM <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpM")
-  d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
+  d_biofuel <- map(input.dat[grep("Area", names(input.dat))], "d_biofuel")
+  d_wpF <- map(input.dat[grep("Area", names(input.dat))], "d_wpF")
+  d_wpM <- map(input.dat[grep("Area", names(input.dat))], "d_wpM")
+  d_wpS <- map(input.dat[grep("Area", names(input.dat))], "d_wpS")
 
   # Match object structure for downstream manipulations
   d_wp <- lapply(seq_along(d_wpF), FUN = function(x) {
@@ -709,7 +709,7 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
     return(res)
   })
 
-  names(C_forest_tot) <- grep("Area", names(forestry.dat), value=T)
+  names(C_forest_tot) <- grep("Area", names(input.dat), value=T)
 
   # Estimate above ground Carbon from CARBINE ratios
   C_forest <- lapply(seq_along(C_forest_tot), FUN = function(x) {
@@ -747,7 +747,7 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
     return(res)
   })
 
-  names(C_forest) <- grep("Area", names(forestry.dat), value=T)
+  names(C_forest) <- grep("Area", names(input.dat), value=T)
 
   # Proportion of biomass in different decay compartments
   rho_wp <- lapply(seq_along(C_forest), FUN = function(x) {
@@ -968,8 +968,8 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
   names(L_biofuel) <- names(B_wp)
 
   # Invert data structure
-  L_forest <- vector(mode = "list", length=length(grep("Area", names(forestry.dat))))
-  names(L_forest) <- grep("Area", names(forestry.dat), value=T)
+  L_forest <- vector(mode = "list", length=length(grep("Area", names(input.dat))))
+  names(L_forest) <- grep("Area", names(input.dat), value=T)
   for (i in 1:length(L_forest)) {
 
     L_forest[[i]]$L_harv <- L_harv[[i]]
@@ -990,18 +990,18 @@ Forestry_CO2_loss_detail_RM <- function(forestry.dat,
 }
 
 #' getYC
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param growthYield.dat Growth and yield table
 #' @return Yield class estimated from UI average height/age
 #' @export
-getYC <- function(forestry.dat,
+getYC <- function(input.dat,
                   growthYield.dat) {
 
   # THIS FUNCTION...
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC")
-  h_tree <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "h_tree")
-  t_stand <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_stand")
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC")
+  h_tree <- map(input.dat[grep("Area", names(input.dat))], .f = "h_tree")
+  t_stand <- map(input.dat[grep("Area", names(input.dat))], .f = "t_stand")
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
   species <- c("Scots_pine", "Sitka_spruce")
 
   point_to_segment_distance <- function(P, A, B) {

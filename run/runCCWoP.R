@@ -13,7 +13,7 @@ dat <- getData(path_to_UI)
 
 ## I need tests to ensure all data has been passed. If not, return error messages
 core.dat <- dat$core.dat
-forestry.dat <- dat$forestry.dat
+input.dat <- dat$input.dat
 construct.dat <- dat$construct.dat
 rm(dat)
 
@@ -107,7 +107,7 @@ if (core.dat$Forestry$for_detail[1] == 1) { # Simple version of forest modelling
   L_forest <- Forestry_CO2_loss_simple(core.dat = core.dat)
 } else { # detailed version of forest modelling (3PG module)
   L_forest <- Forestry_CO2_loss_detail(core.dat = core.dat,
-                                       forestry.dat = forestry.dat)
+                                       input.dat = input.dat)
 }
 
 ################################################################################
@@ -116,7 +116,7 @@ if (core.dat$Forestry$for_detail[1] == 1) { # Simple version of forest modelling
 
 # Wrong with changes to inputs suggesting that conditionals may be failing
 R_windspeed_all <- Wind_speed_ratios(core.dat = core.dat,
-                                     forestry.dat = forestry.dat)
+                                     input.dat = input.dat)
 
 ################################################################################
 ########################### Calculate capacity factor ##########################
@@ -125,9 +125,9 @@ R_windspeed_all <- Wind_speed_ratios(core.dat = core.dat,
 if (core.dat$Windfarm$p_cap_in[1] == 2) { # capacity factor calculated from forestry module
 
   p_cap <- p_cap_windspeed(core.dat = core.dat,
-                          forestry.dat = forestry.dat,
+                          input.dat = input.dat,
                           R_windspeed_all = R_windspeed_all)
-  n_turb <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_turb")
+  n_turb <- map(input.dat[grep("Area", names(input.dat))], .f = "n_turb")
 
 } else { # user input capacity factor
   p_cap <- core.dat$Windfarm$p_cap

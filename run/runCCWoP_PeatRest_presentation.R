@@ -10,17 +10,17 @@ devtools::document()
 
 path <- "Templates/PEATREST_input_scenario_modelling.xlsx" # select user input spreadsheet
 
-forestry.dat <- getData(path)
-forestry.dat <- forestry.dat[1:(length(forestry.dat)-1)] # drop area 2
+input.dat <- getData(path)
+input.dat <- input.dat[1:(length(input.dat)-1)] # drop area 2
 
 growthYield.dat <- getGrowthYieldData()
 
 ## YC not passed by user, these are estimated from height/age data
-if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), FUN = is.null))) {
-  YC <- getYC(forestry.dat,
+if (any(sapply(map(input.dat[grep("Area", names(input.dat))], .f = "YC"), FUN = is.null))) {
+  YC <- getYC(input.dat,
               growthYield.dat)
   for (i in 1:length(YC)) {
-    forestry.dat[[names(YC)[i]]]$YC <- YC[[i]]
+    input.dat[[names(YC)[i]]]$YC <- YC[[i]]
   }
 }
 
@@ -31,14 +31,14 @@ repExpVal <- function(par) {
   return(par)
 }
 
-forestry.dat$Aq.Carbon$rho_AqC <- repExpVal(forestry.dat$Aq.Carbon$rho_AqC)
-forestry.dat$Aq.Carbon$R_AqC0 <- repExpVal(forestry.dat$Aq.Carbon$R_AqC0)
-forestry.dat$Emissions$E_transport <- repExpVal(forestry.dat$Emissions$E_transport)
-forestry.dat$Emissions$E_mulch <- repExpVal(forestry.dat$Emissions$E_mulch)
-forestry.dat$Emissions$E_dam <- repExpVal(forestry.dat$Emissions$E_dam)
-forestry.dat$Emissions$E_bund <- repExpVal(forestry.dat$Emissions$E_bund)
-forestry.dat$Emissions$E_smooth <- repExpVal(forestry.dat$Emissions$E_smooth)
-forestry.dat$Area.1$d_wt_restored <- repExpVal(forestry.dat$Area.1$d_wt_restored)
+input.dat$Aq.Carbon$rho_AqC <- repExpVal(input.dat$Aq.Carbon$rho_AqC)
+input.dat$Aq.Carbon$R_AqC0 <- repExpVal(input.dat$Aq.Carbon$R_AqC0)
+input.dat$Emissions$E_transport <- repExpVal(input.dat$Emissions$E_transport)
+input.dat$Emissions$E_mulch <- repExpVal(input.dat$Emissions$E_mulch)
+input.dat$Emissions$E_dam <- repExpVal(input.dat$Emissions$E_dam)
+input.dat$Emissions$E_bund <- repExpVal(input.dat$Emissions$E_bund)
+input.dat$Emissions$E_smooth <- repExpVal(input.dat$Emissions$E_smooth)
+input.dat$Area.1$d_wt_restored <- repExpVal(input.dat$Area.1$d_wt_restored)
 
 ################################################################################
 ######################### Load decay and 3PG parameters ########################
@@ -64,28 +64,28 @@ parms_fE <-  read_excel(path,
                         range = "A1:H7",
                         progress = F)
 
-forestry.dat$parms_decay <- parms_decay
-forestry.dat$parms_3PG <- parms_3PG
-forestry.dat$parms_fE <- parms_fE
-forestry.dat$growthYield <- growthYield
+input.dat$parms_decay <- parms_decay
+input.dat$parms_3PG <- parms_3PG
+input.dat$parms_fE <- parms_fE
+input.dat$growthYield <- growthYield
 
 ################################################################################
 ##################### CO2 sequestration loss from Forestry #####################
 ################################################################################
 
-S_forest <- ForestSequestrationMod(forestry.dat)
+S_forest <- ForestSequestrationMod(input.dat)
 
 ################################################################################
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat)
+L_forest_soils <- ForestSoilsEmissionsMod(input.dat)
 
 ################################################################################
 ################ Aquatic carbon loss from soils under Forestry #################
 ################################################################################
 
-L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
+L_AqC_forest_soils <- AquaticCarbonMod(input.dat,
                                           L_forest_soils,
                                           forest_soils = T)
 
@@ -93,26 +93,26 @@ L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
 ############ Harvesting/Restoration emissions and wood product decay ###########
 ################################################################################
 
-L_forest <- HarvestingManagementMod(forestry.dat,
+L_forest <- HarvestingManagementMod(input.dat,
                                     S_forest)
 
 ################################################################################
 ########################## Emissions rates from soils ##########################
 ################################################################################
 
-R_tot <- Emissions_rates_soils_RM(forestry.dat)
+R_tot <- Emissions_rates_soils_RM(input.dat)
 
 ################################################################################
 ############################### Loss of Soil CO2 ###############################
 ################################################################################
 
-L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat)
+L_peatland <- PeatlandSoilsEmissionsMod(input.dat)
 
 ################################################################################
 ###################### Aquatic carbon loss from peatland #######################
 ################################################################################
 
-L_AqC_peatland <- AquaticCarbonMod(forestry.dat,
+L_AqC_peatland <- AquaticCarbonMod(input.dat,
                                       L_peatland,
                                       forest_soils = F)
 
@@ -127,9 +127,9 @@ res <- getCarbonDf(S_forest,
                    L_peatland,
                    L_AqC_peatland)
 
-# res <- res %>% mutate(Est = ifelse(Est=="Exp", paste0("YC", forestry.dat$Area.1$YC["Exp"]), Est),
-#                       Est = ifelse(Est=="Min", paste0("YC", forestry.dat$Area.1$YC["Min"]), Est),
-#                       Est = ifelse(Est=="Max", paste0("YC", forestry.dat$Area.1$YC["Max"]), Est))
+# res <- res %>% mutate(Est = ifelse(Est=="Exp", paste0("YC", input.dat$Area.1$YC["Exp"]), Est),
+#                       Est = ifelse(Est=="Min", paste0("YC", input.dat$Area.1$YC["Min"]), Est),
+#                       Est = ifelse(Est=="Max", paste0("YC", input.dat$Area.1$YC["Max"]), Est))
 
 t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 
@@ -137,26 +137,26 @@ t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 ########################### Generate summary plots #############################
 ################################################################################
 
-p_Counterfactual <- plotCounterfactual(res, plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+p_Counterfactual <- plotCounterfactual(res, plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
 p_Counterfactual
 
-p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
 p_L_forest[[1]]
 p_L_forest[[2]]
 
-p_L_peatland <- plotL_peatland(res %>% filter(Est == "Exp"), plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+p_L_peatland <- plotL_peatland(res %>% filter(Est == "Exp"), plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
 p_L_peatland
 
 pLCA <- plotLCA(res %>% filter(Est == "Exp"),
                 t_payback_res %>% filter(Est == "Exp"),
                 sum_areas = F,
-                plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+                plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
 pLCA <- pLCA + scale_y_continuous(limits=c(-50, NA))
 pLCA
 pLCA_cs <- plotLCA_cs(res %>% filter(Est == "Exp"),
                       t_payback_res %>% filter(Est == "Exp"),
                       sum_areas = F,
-                      plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+                      plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
 pLCA_cs <- pLCA_cs + scale_x_continuous(limits=c(0, NA))
 pLCA_cs
 

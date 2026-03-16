@@ -4,10 +4,10 @@
 \alias{ForestSoilsEmissionsMod}
 \title{ForestSoilsEmissionsMod}
 \usage{
-ForestSoilsEmissionsMod(forestry.dat)
+ForestSoilsEmissionsMod(input.dat)
 }
 \arguments{
-\item{forestry.dat}{UI forestry data}
+\item{input.dat}{UI forestry data}
 }
 \value{
 Emissions rates from drained soils under trees

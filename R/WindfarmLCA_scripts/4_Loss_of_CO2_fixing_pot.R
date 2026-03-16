@@ -29,11 +29,11 @@ Loss_of_CO2_fix_pot <- function(core.dat,
 
 #' Bog_plant_sequestration_RM
 #' @param core.dat UI data
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return S_bog_plants
 #' @export
 Bog_plant_sequestration_RM <- function(core.dat,
-                                       forestry.dat) {
+                                       input.dat) {
 
   # This function is redundant: sequestration modelling was removed since emissions modelling
   # includes a sequestration phase at low water table depths
@@ -46,15 +46,15 @@ Bog_plant_sequestration_RM <- function(core.dat,
   ## For now assume fixed rate per unit area sequestration and assume not dependent on area as likely estimated by space for time substitution
   G_bog <- core.dat$Bog.plants$G_bog
 
-  t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_plants")
+  t_restore <- map(input.dat[grep("Area", names(input.dat))], .f = "t_restore_plants")
   t_restore <- lapply(t_restore, FUN = function(x) { # Reorder Min Max
     x <- x[c(1,3,2)]
     names(x) <- c("Exp", "Min", "Max")
     return(x)
   })
-  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow")
-  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_plants") # shape parameter restoration of bog plant sequestration
-  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
+  t_fallow <- map(input.dat[grep("Area", names(input.dat))], .f = "t_fallow")
+  n_restore <- map(input.dat[grep("Area", names(input.dat))], .f = "n_restore_plants") # shape parameter restoration of bog plant sequestration
+  A_harv <- map(input.dat[grep("Area", names(input.dat))], .f = "A_harv") # in units ha
 
   # Compute restoration dynamics (arbitrary asymptotic function)
   S_bog_plants <- lapply(seq_along(A_harv), FUN = function(x) {

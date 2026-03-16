@@ -4,10 +4,10 @@
 \alias{getYC}
 \title{getYC}
 \usage{
-getYC(forestry.dat, growthYield.dat)
+getYC(input.dat, growthYield.dat)
 }
 \arguments{
-\item{forestry.dat}{UI forestry data}
+\item{input.dat}{UI forestry data}
 
 \item{growthYield.dat}{Growth and yield table}
 }

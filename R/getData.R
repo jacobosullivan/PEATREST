@@ -8,9 +8,9 @@ getData <- function(path) {
     mutate(Input.name=str_replace(Input.name, "\\ {2,}", "\\ ")) %>% # remove non-standard formatting
     mutate(Input.name=str_replace(Input.name, "\\ +$", ""))# remove non-standard formatting
 
-  forestry.dat <- getForestryInputData(path, df_struct)
+  input.dat <- getForestryInputData(path, df_struct)
 
-  return(forestry.dat)
+  return(input.dat)
 
 }
 
@@ -63,8 +63,8 @@ getForestryInputData <- function(path, df_struct) {
     filter(!is.na(Subset.name)) %>%
     filter(!is.na(Variable.name))
 
-  forestry.dat <- vector(mode = "list", length = length(unique(df$Subset.name)))
-  names(forestry.dat) <- unique(df$Subset.name)
+  input.dat <- vector(mode = "list", length = length(unique(df$Subset.name)))
+  names(input.dat) <- unique(df$Subset.name)
 
   for (i in 1:length(unique(df$Subset.name))) {
 
@@ -74,10 +74,10 @@ getForestryInputData <- function(path, df_struct) {
     x <- lapply(split((df.subset %>% select(-c(Input.data, Subset.name, Variable.name))), 1:nrow(df.subset)), unlist)
     names(x) <- df.subset$Variable.name
 
-    forestry.dat[[i]] <- x
+    input.dat[[i]] <- x
   }
 
-  return(forestry.dat)
+  return(input.dat)
 }
 
 #' getGrowthYieldData
@@ -130,18 +130,18 @@ getGrowthYieldData <- function() {
 }
 
 #' getYC
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param growthYield.dat Growth and yield table
 #' @return Yield class estimated from UI average height/age
 #' @export
-getYC <- function(forestry.dat,
+getYC <- function(input.dat,
                   growthYield.dat) {
 
   # THIS FUNCTION...
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC")
-  h_tree <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "h_tree")
-  t_stand <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_stand")
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC")
+  h_tree <- map(input.dat[grep("Area", names(input.dat))], .f = "h_tree")
+  t_stand <- map(input.dat[grep("Area", names(input.dat))], .f = "t_stand")
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
   species <- c("Scots_pine", "Sitka_spruce")
 
   point_to_segment_distance <- function(P, A, B) {

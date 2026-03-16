@@ -172,10 +172,10 @@ Emissions_rates_soils <- function(core.dat,
 }
 
 #' Emissions_rates_soils
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return Emissions rates from drained and undrained peatland
 #' @export
-Emissions_rates_soils_RM <- function(forestry.dat) {
+Emissions_rates_soils_RM <- function(input.dat) {
 
   # THIS FUNCTION...
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
@@ -183,7 +183,7 @@ Emissions_rates_soils_RM <- function(forestry.dat) {
 
   # Extract UI forestry WTD and modify to represent hydrological impact of harvesting
   # 45% reduction in WTD following removal of trees: crude estimate from Gaffney et al. 2018
-  d_wt_drained <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_drained") # User estimated average water table depth pre-restoration
+  d_wt_drained <- map(input.dat[grep("Area", names(input.dat))], .f = "d_wt_drained") # User estimated average water table depth pre-restoration
   d_wt_drained <- lapply(d_wt_drained, FUN = function(x) {
     x <- x * (1 - 0.45)
     names(x) <- c("Exp", "Min", "Max")
@@ -191,7 +191,7 @@ Emissions_rates_soils_RM <- function(forestry.dat) {
   })
 
   # User estimated average water table depth post-restoration - default values from pristine bog controls set to 5 (1, 10) cm, Gaffney et al. (2018)
-  d_wt_restored <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_restored")
+  d_wt_restored <- map(input.dat[grep("Area", names(input.dat))], .f = "d_wt_restored")
 
   R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
     METAR21_CO2(CO2_C, x)
@@ -223,11 +223,11 @@ Emissions_rates_soils_RM <- function(forestry.dat) {
 }
 
 #' Emissions_rates_forestry_soils_RM
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @return Emissions rates from drained soils under trees
 #' @export
-Emissions_rates_forestry_soils_RM <- function(forestry.dat,
+Emissions_rates_forestry_soils_RM <- function(input.dat,
                                               growthYield.dat) {
 
   # THIS FUNCTION...
@@ -235,20 +235,20 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
   CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
 
   # Extract inputs for easy access
-  d_peat <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_peat")
-  d_drain <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_drain")
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
-  t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_harv")
-  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv")
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  d_peat <- map(input.dat[grep("Area", names(input.dat))], .f = "d_peat")
+  d_drain <- map(input.dat[grep("Area", names(input.dat))], .f = "d_drain")
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
+  t_harv <- map(input.dat[grep("Area", names(input.dat))], .f = "t_harv")
+  A_harv <- map(input.dat[grep("Area", names(input.dat))], .f = "A_harv")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   species <- c("Scots_pine", "Sitka_spruce")
-  soil_type <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "soil_type")
-  d_root_max <- forestry.dat$Root.depth$d_root_max
-  rho_r_soil <- forestry.dat$Root.depth$rho_r_soil
+  soil_type <- map(input.dat[grep("Area", names(input.dat))], .f = "soil_type")
+  d_root_max <- input.dat$Root.depth$d_root_max
+  rho_r_soil <- input.dat$Root.depth$rho_r_soil
   sigma_zR <- 1 / rho_r_soil
   sigma_zR <- sigma_zR[c(1,3,2)] # low density, high volume, high impact on hydrology
   names(sigma_zR) <- c("Exp", "Min", "Max")
-  r_CBiomass <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "r_CBiomass")
+  r_CBiomass <- map(input.dat[grep("Area", names(input.dat))], .f = "r_CBiomass")
 
   if (0) { # 3PG version
     sigma_zR <- c(Scots_pine = 0.12,

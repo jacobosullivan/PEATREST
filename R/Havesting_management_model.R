@@ -1,9 +1,9 @@
 #' HarvestingManagementMod
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param S_forest 3PG output
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
-HarvestingManagementMod <- function(forestry.dat,
+HarvestingManagementMod <- function(input.dat,
                                     S_forest) {
 
   # This function models the emissions/losses associated with havesting and management
@@ -12,27 +12,27 @@ HarvestingManagementMod <- function(forestry.dat,
 
   # Extract input variables for easy access
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], "A_harv")
-  t_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv")
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
-  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow")
-  parms_decay <- forestry.dat$parms_decay
+  A_harv <- map(input.dat[grep("Area", names(input.dat))], "A_harv")
+  t_harv <- map(input.dat[grep("Area", names(input.dat))], "t_harv")
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  t_fallow <- map(input.dat[grep("Area", names(input.dat))], .f = "t_fallow")
+  parms_decay <- input.dat$parms_decay
 
   # Emissions factors
-  E_transport <- rep(list(forestry.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 km-1 to t CO2 km-3
-  E_harv <- rep(list(forestry.dat$Emissions$E_harv / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 m-3 to t CO2 m-3
-  E_mulch <- rep(list(forestry.dat$Emissions$E_mulch / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_dam <- rep(list(forestry.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_bund <- rep(list(forestry.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_smooth <- rep(list(forestry.dat$Emissions$E_smooth / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_turf_import <- rep(list(forestry.dat$Emissions$E_turf_import / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_turf_local <- rep(list(forestry.dat$Emissions$E_turf_local / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
-  E_fert <- rep(list(forestry.dat$Emissions$E_fert / 1e3), length = length(grep("Area", names(forestry.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_transport <- rep(list(input.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(input.dat)))) # convert from g CO2 km-1 to t CO2 km-3
+  E_harv <- rep(list(input.dat$Emissions$E_harv / 1e3), length = length(grep("Area", names(input.dat)))) # convert from g CO2 m-3 to t CO2 m-3
+  E_mulch <- rep(list(input.dat$Emissions$E_mulch / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_dam <- rep(list(input.dat$Emissions$E_dam / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_bund <- rep(list(input.dat$Emissions$E_bund / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_smooth <- rep(list(input.dat$Emissions$E_smooth / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_turf_import <- rep(list(input.dat$Emissions$E_turf_import / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_turf_local <- rep(list(input.dat$Emissions$E_turf_local / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
+  E_fert <- rep(list(input.dat$Emissions$E_fert / 1e3), length = length(grep("Area", names(input.dat)))) # convert from kg CO2 ha-1 to t CO2 ha-1
 
   # Management strategy
-  timber_removed <- map(forestry.dat[grep("Area", names(forestry.dat))], "timber_removed")
-  mulch <- map(forestry.dat[grep("Area", names(forestry.dat))], "mulch")
+  timber_removed <- map(input.dat[grep("Area", names(input.dat))], "timber_removed")
+  mulch <- map(input.dat[grep("Area", names(input.dat))], "mulch")
   mulch <- lapply(seq_along(mulch), FUN = function(x) {
     if (is.null(mulch[[x]])) { # mulch drop down depends on whether user has selected to leave timber in situ
       mulch[[x]] <- c("Exp" = 2, "Min" = NA, "Max" = NA)
@@ -40,12 +40,12 @@ HarvestingManagementMod <- function(forestry.dat,
     return(mulch[[x]])
   })
   names(mulch) <- names(timber_removed)
-  dam <- map(forestry.dat[grep("Area", names(forestry.dat))], "dam")
-  bund <- map(forestry.dat[grep("Area", names(forestry.dat))], "bund")
-  smooth <- map(forestry.dat[grep("Area", names(forestry.dat))], "smooth")
-  turf_import <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_import")
-  turf_local <- map(forestry.dat[grep("Area", names(forestry.dat))], "turf_local")
-  fert <- map(forestry.dat[grep("Area", names(forestry.dat))], "fert")
+  dam <- map(input.dat[grep("Area", names(input.dat))], "dam")
+  bund <- map(input.dat[grep("Area", names(input.dat))], "bund")
+  smooth <- map(input.dat[grep("Area", names(input.dat))], "smooth")
+  turf_import <- map(input.dat[grep("Area", names(input.dat))], "turf_import")
+  turf_local <- map(input.dat[grep("Area", names(input.dat))], "turf_local")
+  fert <- map(input.dat[grep("Area", names(input.dat))], "fert")
 
   # Set emissions factors to zero for management strategies not selected
   E_transport <- lapply(seq_along(E_transport), FUN = function(x) {
@@ -121,9 +121,9 @@ HarvestingManagementMod <- function(forestry.dat,
   names(E_fert) <- names(YC)
 
   # Biofuel handling
-  r_CBiomass <- map(forestry.dat[grep("Area", names(forestry.dat))], "r_CBiomass")
-  e_felled_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_felled_biofuel")
-  e_biofuel_plant <- map(forestry.dat[grep("Area", names(forestry.dat))], "e_biofuel_plant")
+  r_CBiomass <- map(input.dat[grep("Area", names(input.dat))], "r_CBiomass")
+  e_felled_biofuel <- map(input.dat[grep("Area", names(input.dat))], "e_felled_biofuel")
+  e_biofuel_plant <- map(input.dat[grep("Area", names(input.dat))], "e_biofuel_plant")
   e_biofuel_plant <- lapply(e_biofuel_plant, FUN = function(x) {
     if (is.null(x)) {
       return(c(Exp = 0, Min = 0, Max = 0)) # add zero vector in case p_biofuel not passed
@@ -132,14 +132,14 @@ HarvestingManagementMod <- function(forestry.dat,
     }
   })
 
-  E_grid_mix <- rep(list(forestry.dat$Emissions$E_grid_mix), length = length(grep("Area", names(forestry.dat))))
+  E_grid_mix <- rep(list(input.dat$Emissions$E_grid_mix), length = length(grep("Area", names(input.dat))))
   names(E_grid_mix) <- names(r_CBiomass)
 
   # Wood product handling
-  d_biofuel <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_biofuel")
-  d_wpF <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpF")
-  d_wpM <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpM")
-  d_wpS <- map(forestry.dat[grep("Area", names(forestry.dat))], "d_wpS")
+  d_biofuel <- map(input.dat[grep("Area", names(input.dat))], "d_biofuel")
+  d_wpF <- map(input.dat[grep("Area", names(input.dat))], "d_wpF")
+  d_wpM <- map(input.dat[grep("Area", names(input.dat))], "d_wpM")
+  d_wpS <- map(input.dat[grep("Area", names(input.dat))], "d_wpS")
 
   # Match object structure for downstream manipulations
   d_wp <- lapply(seq_along(d_wpF), FUN = function(x) {
@@ -233,19 +233,19 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(input.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
-      V_a <- forestry.dat$growthYield %>%
+      V_a <- input.dat$growthYield %>%
         filter(Spp == Spp_a,
                YC == floor(YC_a), # floor required since if YC or t_harv implicitly coerced to floats, filter will fail!
                Age == floor(t_harv_a)) %>%
@@ -411,7 +411,7 @@ HarvestingManagementMod <- function(forestry.dat,
     return(res)
   })
 
-  names(C_forest_tot) <- grep("Area", names(forestry.dat), value=T)
+  names(C_forest_tot) <- grep("Area", names(input.dat), value=T)
 
   # Estimate above ground Carbon from CARBINE ratios
   C_forest <- lapply(seq_along(C_forest_tot), FUN = function(x) {
@@ -422,19 +422,19 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(input.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
-      rho_ag <- forestry.dat$growthYield %>%
+      rho_ag <- input.dat$growthYield %>%
         filter(Spp == Spp_a,
                YC == floor(YC_a),
                Age == floor(t_harv_a)) %>%
@@ -449,7 +449,7 @@ HarvestingManagementMod <- function(forestry.dat,
     return(res)
   })
 
-  names(C_forest) <- grep("Area", names(forestry.dat), value=T)
+  names(C_forest) <- grep("Area", names(input.dat), value=T)
 
   # Proportion of biomass in different decay compartments
   rho_wp <- lapply(seq_along(C_forest), FUN = function(x) {
@@ -459,20 +459,20 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(input.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((input.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
       if (timber_removed[[x]][1]==1) {
-        rho <- forestry.dat$growthYield %>%
+        rho <- input.dat$growthYield %>%
           filter(Spp == Spp_a,
                  YC == YC_a,
                  Age == t_harv_a) %>%
@@ -480,13 +480,13 @@ HarvestingManagementMod <- function(forestry.dat,
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched
-          rho <- forestry.dat$growthYield %>%
+          rho <- input.dat$growthYield %>%
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%
             select(rho_r, rho_m, rho_f)
         } else { # not mulched
-          rho <- forestry.dat$growthYield %>%
+          rho <- input.dat$growthYield %>%
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%
@@ -670,8 +670,8 @@ HarvestingManagementMod <- function(forestry.dat,
   names(L_biofuel) <- names(B_wp)
 
   # Invert data structure
-  L_forest <- vector(mode = "list", length=length(grep("Area", names(forestry.dat))))
-  names(L_forest) <- grep("Area", names(forestry.dat), value=T)
+  L_forest <- vector(mode = "list", length=length(grep("Area", names(input.dat))))
+  names(L_forest) <- grep("Area", names(input.dat), value=T)
   for (i in 1:length(L_forest)) {
 
     L_forest[[i]]$L_harv <- L_harv[[i]]

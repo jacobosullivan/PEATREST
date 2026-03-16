@@ -4,10 +4,10 @@
 \alias{HarvestingManagementMod}
 \title{HarvestingManagementMod}
 \usage{
-HarvestingManagementMod(forestry.dat, S_forest)
+HarvestingManagementMod(input.dat, S_forest)
 }
 \arguments{
-\item{forestry.dat}{UI forestry data}
+\item{input.dat}{UI forestry data}
 
 \item{S_forest}{3PG output}
 }

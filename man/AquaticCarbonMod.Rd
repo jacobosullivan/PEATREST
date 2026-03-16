@@ -4,10 +4,10 @@
 \alias{AquaticCarbonMod}
 \title{AquaticCarbonMod}
 \usage{
-AquaticCarbonMod(forestry.dat, L_gaseous, forest_soils = T)
+AquaticCarbonMod(input.dat, L_gaseous, forest_soils = T)
 }
 \arguments{
-\item{forestry.dat}{UI forestry data}
+\item{input.dat}{UI forestry data}
 
 \item{L_gaseous}{Emissions object (forest soils or peatland)}
 

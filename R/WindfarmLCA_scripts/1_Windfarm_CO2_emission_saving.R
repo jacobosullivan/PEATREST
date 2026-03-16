@@ -9,7 +9,7 @@
 Windfarm_output <- function(p_cap,
                             n_turb,
                             c_turb,
-                            forestry.dat = NULL) {
+                            input.dat = NULL) {
 
   ## This function will estimate annual windfarm output [MW] as a function
   ## of the number of turbines, maximum turbine capacity [MW] and the power
@@ -62,11 +62,11 @@ Windfarm_emissions_saving <- function(e_out,
 
 #' p_cap_windspeed
 #' @param core.dat UI data
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @param R_windspeed_all estimated windspeed ratios
 #' @return power capacity
 #' @export
-p_cap_windspeed <- function(core.dat, forestry.dat, R_windspeed_all) {
+p_cap_windspeed <- function(core.dat, input.dat, R_windspeed_all) {
 
   ## This function computes the wind turbine power capacity as a function of 
   ## relative windspeeds [ms-1/ms-1]
@@ -78,13 +78,13 @@ p_cap_windspeed <- function(core.dat, forestry.dat, R_windspeed_all) {
   R_windspeed <- R_windspeed_all$ratio_no_fell
 
   ii <- 1
-  for (i in grep("Area", names(forestry.dat))) {
-    windspeed[[ii]] <- forestry.dat$Windfarm$Vwind_site
+  for (i in grep("Area", names(input.dat))) {
+    windspeed[[ii]] <- input.dat$Windfarm$Vwind_site
     P_max[[ii]] <- 24 * 365 * core.dat$Windfarm$c_turb
-    t_down[[ii]] <- forestry.dat$Windfarm$t_down
+    t_down[[ii]] <- input.dat$Windfarm$t_down
 
-    sel_felled <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv_turb")[[ii]] > 0 & map(forestry.dat[grep("Area", names(forestry.dat))], .f = "D_width")[[ii]]
-    sel_replant <-  map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_replant_turb")[[ii]]
+    sel_felled <- map(input.dat[grep("Area", names(input.dat))], .f = "A_harv_turb")[[ii]] > 0 & map(input.dat[grep("Area", names(input.dat))], .f = "D_width")[[ii]]
+    sel_replant <-  map(input.dat[grep("Area", names(input.dat))], .f = "A_replant_turb")[[ii]]
     if (any(sel_felled & sel_replant)) {
       R_windspeed[[ii]][sel_felled & sel_replant] <- R_windspeed_all$ratio_felled_replant[[ii]][sel_felled & sel_replant]
     } else if (any(sel_felled)) {
@@ -92,12 +92,12 @@ p_cap_windspeed <- function(core.dat, forestry.dat, R_windspeed_all) {
     }
     ii <- ii + 1
   }
-  names(windspeed) <- grep("Area", names(forestry.dat), value = T)
-  names(P_max) <- grep("Area", names(forestry.dat), value = T)
-  names(t_down) <- grep("Area", names(forestry.dat), value = T)
+  names(windspeed) <- grep("Area", names(input.dat), value = T)
+  names(P_max) <- grep("Area", names(input.dat), value = T)
+  names(t_down) <- grep("Area", names(input.dat), value = T)
 
-  slope_pow_curve <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "slope_pow_curve")
-  int_pow_curve <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "int_pow_curve")
+  slope_pow_curve <- map(input.dat[grep("Area", names(input.dat))], .f = "slope_pow_curve")
+  int_pow_curve <- map(input.dat[grep("Area", names(input.dat))], .f = "int_pow_curve")
 
   # Inset Vestas standard values if not passed by user
   if (any(unlist(lapply(slope_pow_curve, FUN=is.null)))) {

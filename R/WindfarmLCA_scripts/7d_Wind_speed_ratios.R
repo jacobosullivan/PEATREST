@@ -2,11 +2,11 @@
 
 #' Wind_speed_ratios
 #' @param core.dat UI data
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return windspeed ratios
 #' @export
 Wind_speed_ratios <- function(core.dat,
-                              forestry.dat) {
+                              input.dat) {
 
   # THIS FUNCTION...
 
@@ -15,22 +15,22 @@ Wind_speed_ratios <- function(core.dat,
   h_turb <- list()
 
   ii <- 1
-  for (i in grep("Area", names(forestry.dat))) {
+  for (i in grep("Area", names(input.dat))) {
     t_wf[[ii]] <- core.dat$Windfarm$t_wf
-    h_turb[[ii]] <- forestry.dat$Windfarm$H_turb
+    h_turb[[ii]] <- input.dat$Windfarm$H_turb
     ii <- ii + 1
   }
-  names(t_wf) <- grep("Area", names(forestry.dat), value = T)
-  names(h_turb) <- grep("Area", names(forestry.dat), value = T)
+  names(t_wf) <- grep("Area", names(input.dat), value = T)
+  names(h_turb) <- grep("Area", names(input.dat), value = T)
 
   # Width of felled forestry around turbine
-  w_felled <- lapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv_turb"),
+  w_felled <- lapply(map(input.dat[grep("Area", names(input.dat))], .f = "A_harv_turb"),
                      FUN = function(x) sqrt(x*10000))
 
   # Height of original forestry at harvesting
   # Age at harvesting and soil type passed to growth and yield table function
-  avg_height_felled <- lapply(list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv"),
-                                      l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
+  avg_height_felled <- lapply(list_op(l1 = map(input.dat[grep("Area", names(input.dat))], "t_harv"),
+                                      l2 = map(input.dat[grep("Area", names(input.dat))], "soil_type"),
                                       func = "c"),
                               FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$avg_height)
 
@@ -38,16 +38,16 @@ Wind_speed_ratios <- function(core.dat,
   # Age given by windfarm liftime + age of seedling at plantation - length of fallow period
   # This and soil type are passed to the growth and yield table function
   avg_height_replant <- lapply(list_op(l1 = list_op(l1 = t_wf,
-                                                    l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_seedling_replant"),
-                                                    l3 = lapply(map(forestry.dat[grep("Area", names(forestry.dat))], "t_replant"), FUN = function(x) -x),
+                                                    l2 = map(input.dat[grep("Area", names(input.dat))], "t_seedling_replant"),
+                                                    l3 = lapply(map(input.dat[grep("Area", names(input.dat))], "t_replant"), FUN = function(x) -x),
                                                     func = "+"),
-                                       l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
+                                       l2 = map(input.dat[grep("Area", names(input.dat))], "soil_type"),
                                        func = "c"),
                                  FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$avg_height)
 
   # Height of original forestry at decomissioning IF NOT FELLED (accounting for 50 year rotation)
   t_rotation <- 50
-  t_harv_not_felled <- list_op(l1 = map(forestry.dat[grep("Area", names(forestry.dat))], "t_harv"),
+  t_harv_not_felled <- list_op(l1 = map(input.dat[grep("Area", names(input.dat))], "t_harv"),
                                l2 = t_wf,
                                func = "+")
 
@@ -62,7 +62,7 @@ Wind_speed_ratios <- function(core.dat,
 
   # Age at decomissioning if not felled and soil type passed to growth and yield table function
   avg_height_not_felled <- lapply(list_op(l1 = t_harv_not_felled,
-                                          l2 = map(forestry.dat[grep("Area", names(forestry.dat))], "soil_type"),
+                                          l2 = map(input.dat[grep("Area", names(input.dat))], "soil_type"),
                                           func = "c"),
                                   FUN = function(x) growth_yield_tab(t = x[1:3], soil_type = x[4], species = 2)$avg_height)
 
@@ -109,7 +109,7 @@ Wind_speed_ratios <- function(core.dat,
   ## IBL forest
   h_IBL_forest <- getIBL(la = r_upstream,
                          lb = r_forest,
-                         lc = map(forestry.dat[grep("Area", names(forestry.dat))], .f = "D_width"),
+                         lc = map(input.dat[grep("Area", names(input.dat))], .f = "D_width"),
                          ld = zpd_forest)
 
   ## IBL felled forest

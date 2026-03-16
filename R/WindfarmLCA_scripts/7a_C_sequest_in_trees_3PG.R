@@ -2,11 +2,11 @@
 
 #' C_sequest_in_trees
 #' @param core.dat UI data
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return 3PG output
 #' @export
 C_sequest_in_trees <- function(core.dat,
-                               forestry.dat) {
+                               input.dat) {
 
   # THIS FUNCTION...
 
@@ -33,16 +33,16 @@ C_sequest_in_trees <- function(core.dat,
   parms_3PG_by_area <- array(0,
                              dim = c(nrow(parms_3PG), # f_E and t_seedling_replant not included in template
                                      3, # Exp, Min, Max if defined
-                                     length(grep("Area", names(forestry.dat)))), # number of areas considered
+                                     length(grep("Area", names(input.dat)))), # number of areas considered
                              dimnames = list(c(parms_3PG$Var_name),
                                              c("Exp", "Min", "Max"),
-                                             grep("Area", names(forestry.dat), value=T)))
+                                             grep("Area", names(input.dat), value=T)))
 
   ii <- 1
-  for (i in grep("Area", names(forestry.dat))) {
+  for (i in grep("Area", names(input.dat))) {
 
     # Species parameters (no range given)
-    parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[forestry.dat[[i]]$species[1]])]
+    parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[input.dat[[i]]$species[1]])]
 
     # Accumulated temperature category based on wind farm site average temperature (not forest area)
     # May have non-zero range though unlikely due to current coarseness of environmental metric
@@ -56,17 +56,17 @@ C_sequest_in_trees <- function(core.dat,
       }
     })
 
-    f_E_area <- f_E_tab[f_E_tab$Soil_type == forestry.dat[[i]]$soil_type[1],]
+    f_E_area <- f_E_tab[f_E_tab$Soil_type == input.dat[[i]]$soil_type[1],]
     parms_3PG_by_area["f_E",,ii] <- f_E_area$f_E[c(which(f_E_area$Acc_temp == parms_3PG_by_area["acc_temp",1,ii]),
                                                     which(f_E_area$Acc_temp == parms_3PG_by_area["acc_temp",2,ii]),
                                                     which(f_E_area$Acc_temp == parms_3PG_by_area["acc_temp",3,ii]))] # this allows re-indexing of same or different values in case of differences in Exp, Min and Max acc_temp
 
     # Forestry parameters
-    parms_3PG_by_area["t_harv",,ii] <- forestry.dat[[i]]$t_harv
+    parms_3PG_by_area["t_harv",,ii] <- input.dat[[i]]$t_harv
     parms_3PG_by_area["t_wf",,ii] <- core.dat$Windfarm$t_wf
-    parms_3PG_by_area["t_replant",,ii] <- forestry.dat[[i]]$t_replant
-    parms_3PG_by_area["t_seedling_replant",,ii] <- forestry.dat[[i]]$t_seedling_replant
-    parms_3PG_by_area["t_replant_guar",,ii] <- core.dat$Windfarm$t_wf - forestry.dat[[i]]$t_replant
+    parms_3PG_by_area["t_replant",,ii] <- input.dat[[i]]$t_replant
+    parms_3PG_by_area["t_seedling_replant",,ii] <- input.dat[[i]]$t_seedling_replant
+    parms_3PG_by_area["t_replant_guar",,ii] <- core.dat$Windfarm$t_wf - input.dat[[i]]$t_replant
     parms_3PG_by_area["t_replant_guar", parms_3PG_by_area["t_replant_guar",,ii] < 0, ii] <- 0 # set to zero if negative
 
     ii <- ii + 1
@@ -138,10 +138,10 @@ C_sequest_in_trees <- function(core.dat,
 }
 
 #' C_sequest_in_trees_RM
-#' @param forestry.dat UI forestry data
+#' @param input.dat UI forestry data
 #' @return 3PG output
 #' @export
-C_sequest_in_trees_RM <- function(forestry.dat) {
+C_sequest_in_trees_RM <- function(input.dat) {
 
   # THIS FUNCTION...
 
@@ -160,11 +160,11 @@ C_sequest_in_trees_RM <- function(forestry.dat) {
                           range = "A1:H7")
 
   # Extract input variables for easy access
-  YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
-  Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+  YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
 
   ## Estimate NPP_max for full 3PG simulation based on YC
-  NPP_Max <- lapply(1:length(grep("Area", names(forestry.dat))),
+  NPP_Max <- lapply(1:length(grep("Area", names(input.dat))),
                     FUN = function(x) {
                       Spp_a <- species[Spp[[x]][1]]
                       YC_a <- YC[[x]]
@@ -179,10 +179,10 @@ C_sequest_in_trees_RM <- function(forestry.dat) {
 
                       return(NPP_max)
                     })
-  names(NPP_Max) <- grep("Area", names(forestry.dat), value=T)
+  names(NPP_Max) <- grep("Area", names(input.dat), value=T)
 
   ## Estimate f_E for simplified 3PG simulation based on NPP_max
-  f_E <- lapply(1:length(grep("Area", names(forestry.dat))),
+  f_E <- lapply(1:length(grep("Area", names(input.dat))),
                 FUN = function(x) {
                   Spp_a <- species[Spp[[x]][1]]
                   NPP_Max_a <- NPP_Max[[x]]
@@ -196,33 +196,33 @@ C_sequest_in_trees_RM <- function(forestry.dat) {
                   f_E <- aa[1] + aa[2]*NPP_Max_a + aa[3]*NPP_Max_a^2 + aa[4]*NPP_Max_a^3 + aa[5]*NPP_Max_a^4
                   return(f_E)
                 })
-  names(f_E) <- grep("Area", names(forestry.dat), value=T)
+  names(f_E) <- grep("Area", names(input.dat), value=T)
 
   # Get full parameter lists for each area
   parms_3PG_by_area <- array(0,
                              dim = c(nrow(parms_3PG), # f_E and t_seedling_replant not included in template
                                      3, # Exp, Min, Max if defined
-                                     length(grep("Area", names(forestry.dat)))), # number of areas considered
+                                     length(grep("Area", names(input.dat)))), # number of areas considered
                              dimnames = list(c(parms_3PG$Var_name),
                                              c("Exp", "Min", "Max"),
-                                             grep("Area", names(forestry.dat), value=T)))
+                                             grep("Area", names(input.dat), value=T)))
 
   ii <- 1
-  for (i in grep("Area", names(forestry.dat))) {
+  for (i in grep("Area", names(input.dat))) {
 
     # Species parameters (no range given)
-    parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[forestry.dat[[i]]$species[1]])]
+    parms_3PG_by_area[parms_3PG$Var_name,,ii] <- parms_3PG[,which(colnames(parms_3PG) == species[input.dat[[i]]$species[1]])]
     parms_3PG_by_area["f_E",,ii] <- f_E[[ii]]
 
     # Max simulation length set to 500 + harvesting age
-    parms_3PG_by_area["t_wf",,ii] <- 500 + map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_harv")[[ii]]
+    parms_3PG_by_area["t_wf",,ii] <- 500 + map(input.dat[grep("Area", names(input.dat))], .f = "t_harv")[[ii]]
 
     # If user selects rotation, set rotation length to 50 by default.
-    if (map(forestry.dat[grep("Area", names(forestry.dat))], .f = "rotation")[[ii]][1] == 1) { # user selects rotation
-      if (is.null(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_rotation")[[ii]])) { # user has NOT input rotation length
+    if (map(input.dat[grep("Area", names(input.dat))], .f = "rotation")[[ii]][1] == 1) { # user selects rotation
+      if (is.null(map(input.dat[grep("Area", names(input.dat))], .f = "t_rotation")[[ii]])) { # user has NOT input rotation length
         parms_3PG_by_area["t_rotation",,ii] <- rep(50, 3)
       } else {
-        parms_3PG_by_area["t_rotation",,ii] <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_rotation")[[ii]]
+        parms_3PG_by_area["t_rotation",,ii] <- map(input.dat[grep("Area", names(input.dat))], .f = "t_rotation")[[ii]]
       }
     } else { # user selects NO rotation
       parms_3PG_by_area["t_rotation",,ii] <- parms_3PG_by_area["t_wf",,ii]
@@ -252,17 +252,17 @@ C_sequest_in_trees_RM <- function(forestry.dat) {
   out <- lapply(seq_along(out), FUN = function(x) {
     res <- lapply(seq_along(out[[x]]), FUN = function(y) {
       out[[x]][[y]] %>%
-        mutate(t = t - unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "t_harv"))[y]) %>%
+        mutate(t = t - unlist(map(input.dat[grep("Area", names(input.dat))[x]], .f = "t_harv"))[y]) %>%
         rename(NPP_pa = NPP, # trees only
                NPP_tot_pa = NPP_tot) %>% # trees + understory
-        mutate(NPP = NPP_pa * unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "A_harv"))[y], # trees only
-               NPP_tot = NPP_tot_pa * unlist(map(forestry.dat[grep("Area", names(forestry.dat))[x]], .f = "A_harv"))[y]) # trees + understory
+        mutate(NPP = NPP_pa * unlist(map(input.dat[grep("Area", names(input.dat))[x]], .f = "A_harv"))[y], # trees only
+               NPP_tot = NPP_tot_pa * unlist(map(input.dat[grep("Area", names(input.dat))[x]], .f = "A_harv"))[y]) # trees + understory
     })
     names(res) <- names(out[[x]])
     return(res)
   })
 
-  names(out) <- grep("Area", names(forestry.dat), value=T)
+  names(out) <- grep("Area", names(input.dat), value=T)
 
   return(Forestry.seq = out)
 }
@@ -417,8 +417,8 @@ if(0) {
                           range = "A1:H7")
 
   # Extract input variables for easy access
-  # YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
-  # Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
+  # YC <- map(input.dat[grep("Area", names(input.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
+  # Spp <- map(input.dat[grep("Area", names(input.dat))], .f = "species")
 
   YC <- c(6,8,10,12)
   Spp <- 2

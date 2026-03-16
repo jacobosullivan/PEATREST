@@ -14,17 +14,17 @@ devtools::document()
 
 path <- "Templates/PEATREST_input_sensitivity_analysis.xlsx" # select user input spreadsheet
 
-forestry.dat <- getData(path)
-forestry.dat <- forestry.dat[1:(length(forestry.dat)-1)] # drop area 2
+input.dat <- getData(path)
+input.dat <- input.dat[1:(length(input.dat)-1)] # drop area 2
 
 growthYield.dat <- getGrowthYieldData()
 
 ## YC not passed by user, these are estimated from height/age data
-if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), FUN = is.null))) {
-  YC <- getYC(forestry.dat,
+if (any(sapply(map(input.dat[grep("Area", names(input.dat))], .f = "YC"), FUN = is.null))) {
+  YC <- getYC(input.dat,
               growthYield.dat)
   for (i in 1:length(YC)) {
-    forestry.dat[[names(YC)[i]]]$YC <- YC[[i]]
+    input.dat[[names(YC)[i]]]$YC <- YC[[i]]
   }
 }
 
@@ -55,10 +55,10 @@ parms_fE <-  read_excel(path,
 parms_decay$delta <- 0.5
 parms_decay <- as.data.frame(parms_decay)
 
-forestry.dat$parms_decay <- parms_decay
-forestry.dat$parms_3PG <- parms_3PG
-forestry.dat$parms_fE <- parms_fE
-forestry.dat$growthYield <- growthYield
+input.dat$parms_decay <- parms_decay
+input.dat$parms_3PG <- parms_3PG
+input.dat$parms_fE <- parms_fE
+input.dat$growthYield <- growthYield
 
 ################################################################################
 ########################## Get list of controlled pars #########################
@@ -107,7 +107,7 @@ find_index_paths <- function(lst, target_name, current_path = integer()) {
   return(paths)
 }
 
-input_vars <- get_all_names(forestry.dat)
+input_vars <- get_all_names(input.dat)
 input_vars_all <- input_vars
 input_vars <- input_vars[-c(1:4)] # remove higher level names (Windfarm, Emissions, Aq.Carbon, Area.1)
 
@@ -138,7 +138,7 @@ if (1) { # remove variables only relevant to windfarm LCA. This will likely be r
                                               "fert")]
 }
 
-# forestry.dat$Area.1$YC[1] <- 10
+# input.dat$Area.1$YC[1] <- 10
 
 if (1) {
 
@@ -154,7 +154,7 @@ if (1) {
   r_files <- list.files(script_dir, pattern = "\\.R$", full.names = TRUE)
 
   # Export the list of files to all workers
-  clusterExport(cl, varlist = c("r_files", "forestry.dat"))
+  clusterExport(cl, varlist = c("r_files", "input.dat"))
 
   # Source the files on each worker
   clusterEvalQ(cl, {
@@ -171,29 +171,29 @@ if (1) {
                               .packages = c("readxl", "tidyverse", "purrr"),
                               .combine=rbind) %dopar% {
 
-    # forestry.dat_unchange <- forestry.dat
+    # input.dat_unchange <- input.dat
     res_j <- c()
 
     for (j in seq(0.2,2,by=0.2)) {
 
       # Find focal input var in nested list and modify (Exp value only)
-      var_ind <- find_index_paths(forestry.dat, i)
+      var_ind <- find_index_paths(input.dat, i)
 
-      forestry.dat_j <- forestry.dat
-      forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1] <- j*forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1]
+      input.dat_j <- input.dat
+      input.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1] <- j*input.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1]
 
       ################################################################################
       ##################### CO2 sequestration loss from Forestry #####################
       ################################################################################
 
-      S_forest <- ForestSequestrationMod(forestry.dat_j)
+      S_forest <- ForestSequestrationMod(input.dat_j)
 
       ################################################################################
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
       skipIteration <- F
-      tryCatch(L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat_j),
+      tryCatch(L_forest_soils <- ForestSoilsEmissionsMod(input.dat_j),
         error = function(e) skipIteration <<- T)
       if (skipIteration) next
 
@@ -202,7 +202,7 @@ if (1) {
       ################ Aquatic carbon loss from soils under Forestry #################
       ################################################################################
 
-      L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat_j,
+      L_AqC_forest_soils <- AquaticCarbonMod(input.dat_j,
                                                 L_forest_soils,
                                                 forest_soils = T)
 
@@ -210,26 +210,26 @@ if (1) {
       ############ Harvesting/Restoration emissions and wood product decay ###########
       ################################################################################
 
-      L_forest <- HarvestingManagementMod(forestry.dat_j,
+      L_forest <- HarvestingManagementMod(input.dat_j,
                                           S_forest)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
       ################################################################################
 
-      R_tot <- Emissions_rates_soils_RM(forestry.dat_j)
+      R_tot <- Emissions_rates_soils_RM(input.dat_j)
 
       ################################################################################
       ############################### Loss of Soil CO2 ###############################
       ################################################################################
 
-      L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat_j)
+      L_peatland <- PeatlandSoilsEmissionsMod(input.dat_j)
 
       ################################################################################
       ###################### Aquatic carbon loss from peatland #######################
       ################################################################################
 
-      L_AqC_peatland <- AquaticCarbonMod(forestry.dat_j,
+      L_AqC_peatland <- AquaticCarbonMod(input.dat_j,
                                             L_peatland,
                                             forest_soils = F)
 
@@ -247,7 +247,7 @@ if (1) {
       t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 
       if (0) {
-        # p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
+        # p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", input.dat$Area.1$YC[c(2,1,3)]))
         # p_L_forest[[1]]
 
         # plotL_AqC_peatland(res %>% filter(Est == "Exp"))
@@ -255,13 +255,13 @@ if (1) {
         plotLCA_cs(res %>% filter(Est == "Exp"),
                 t_payback_res %>% filter(Est == "Exp"),
                 sum_areas = F,
-                plabs = paste0("YC", forestry.dat_j$Area.1$YC[c(2,1,3)]))#)
+                plabs = paste0("YC", input.dat_j$Area.1$YC[c(2,1,3)]))#)
       }
 
       res_j <- rbind(res_j,
                      data.frame(var = i,
                                 sca = j,
-                                val = forestry.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1],
+                                val = input.dat_j[[var_ind[[1]][1]]][[var_ind[[1]][2]]][1],
                                 t_flux = (t_payback_res %>%
                                             filter(Est == "Exp", metric == "t_flux"))$t,
                                 t_payback = (t_payback_res %>%
@@ -278,7 +278,7 @@ if (1) {
   ## Repeat for decay parameters
 
   # Initialise parallel implementation
-  numCores <- min(2*nrow(forestry.dat$parms_decay), detectCores() - 1)
+  numCores <- min(2*nrow(input.dat$parms_decay), detectCores() - 1)
   cl <- makeCluster(numCores)
   registerDoParallel(cl)
 
@@ -289,7 +289,7 @@ if (1) {
   r_files <- list.files(script_dir, pattern = "\\.R$", full.names = TRUE)
 
   # Export the list of files to all workers
-  clusterExport(cl, varlist = c("r_files", "forestry.dat"))
+  clusterExport(cl, varlist = c("r_files", "input.dat"))
 
   # Source the files on each worker
   clusterEvalQ(cl, {
@@ -301,26 +301,26 @@ if (1) {
     }
   })
 
-  sensitivity_resB <- foreach(i = 1:(2*nrow(forestry.dat$parms_decay)),
+  sensitivity_resB <- foreach(i = 1:(2*nrow(input.dat$parms_decay)),
                               .packages = c("readxl", "tidyverse", "purrr"),
                               .combine=rbind) %dopar% {
 
     res_j <- c()
 
-    if (i >= (nrow(forestry.dat$parms_decay)+1)) {
-      k <- i - nrow(forestry.dat$parms_decay)
+    if (i >= (nrow(input.dat$parms_decay)+1)) {
+      k <- i - nrow(input.dat$parms_decay)
       l <- 6
     } else {
       k <- i
       l <- 4
     }
 
-    var_name <- forestry.dat$parms_decay$Var[k]
-    if (i > nrow(forestry.dat$parms_decay)) {
+    var_name <- input.dat$parms_decay$Var[k]
+    if (i > nrow(input.dat$parms_decay)) {
       var_name <- stringr::str_replace(var_name, "alpha", "delta")
     }
 
-    alpha_df <- forestry.dat$parms_decay
+    alpha_df <- input.dat$parms_decay
 
     for (j in seq(0.2,2,by=0.2)) {
 
@@ -328,25 +328,25 @@ if (1) {
 
       alpha_df_j[k,l] <- alpha_df_j[k,l] * j
 
-      forestry.dat$parms_decay <- alpha_df_j
+      input.dat$parms_decay <- alpha_df_j
 
       ################################################################################
       ##################### CO2 sequestration loss from Forestry #####################
       ################################################################################
 
-      S_forest <- ForestSequestrationMod(forestry.dat)
+      S_forest <- ForestSequestrationMod(input.dat)
 
       ################################################################################
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
-      L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat)
+      L_forest_soils <- ForestSoilsEmissionsMod(input.dat)
 
       ################################################################################
       ################ Aquatic carbon loss from soils under Forestry #################
       ################################################################################
 
-      L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
+      L_AqC_forest_soils <- AquaticCarbonMod(input.dat,
                                                 L_forest_soils,
                                                 forest_soils = T)
 
@@ -354,26 +354,26 @@ if (1) {
       ############ Harvesting/Restoration emissions and wood product decay ###########
       ################################################################################
 
-      L_forest <- HarvestingManagementMod(forestry.dat,
+      L_forest <- HarvestingManagementMod(input.dat,
                                           S_forest)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
       ################################################################################
 
-      R_tot <- Emissions_rates_soils_RM(forestry.dat)
+      R_tot <- Emissions_rates_soils_RM(input.dat)
 
       ################################################################################
       ############################### Loss of Soil CO2 ###############################
       ################################################################################
 
-      L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat)
+      L_peatland <- PeatlandSoilsEmissionsMod(input.dat)
 
       ################################################################################
       ###################### Aquatic carbon loss from peatland #######################
       ################################################################################
 
-      L_AqC_peatland <- AquaticCarbonMod(forestry.dat,
+      L_AqC_peatland <- AquaticCarbonMod(input.dat,
                                             L_peatland,
                                             forest_soils = F)
 
@@ -404,13 +404,13 @@ if (1) {
       res_j <- rbind(res_j,
                      data.frame(var = var_name,
                                 sca = j,
-                                val = forestry.dat$parms_decay[k,l],
+                                val = input.dat$parms_decay[k,l],
                                 t_flux = (t_payback_res %>%
                                             filter(Est == "Exp", metric == "t_flux"))$t,
                                 t_payback = (t_payback_res %>%
                                                filter(Est == "Exp", metric == "t_payback"))$t))
 
-      forestry.dat$parms_decay <- alpha_df
+      input.dat$parms_decay <- alpha_df
 
     }
     rownames(res_j) <- NULL

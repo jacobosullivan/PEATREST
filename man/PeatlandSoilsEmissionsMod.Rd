@@ -4,10 +4,10 @@
 \alias{PeatlandSoilsEmissionsMod}
 \title{PeatlandSoilsEmissionsMod}
 \usage{
-PeatlandSoilsEmissionsMod(forestry.dat)
+PeatlandSoilsEmissionsMod(input.dat)
 }
 \arguments{
-\item{forestry.dat}{UI forestry data}
+\item{input.dat}{UI forestry data}
 
 \item{R_tot}{estimated emissions rates}
 }
