@@ -4,7 +4,7 @@
 \alias{HarvestingManagementMod}
 \title{HarvestingManagementMod}
 \usage{
-HarvestingManagementMod(forestry.dat, growthYield.dat, S_forest, alpha_df)
+HarvestingManagementMod(forestry.dat, growthYield.dat, S_forest)
 }
 \arguments{
 \item{forestry.dat}{UI forestry data}
@@ -12,8 +12,6 @@ HarvestingManagementMod(forestry.dat, growthYield.dat, S_forest, alpha_df)
 \item{growthYield.dat}{growth and yield data (estimated from CARBINE runs)}
 
 \item{S_forest}{3PG output}
-
-\item{alpha_df}{dataframe of decay rates / efficiencies}
 }
 \value{
 Estimated lifetime loss of carbon stored in forestry products

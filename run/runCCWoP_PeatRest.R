@@ -48,16 +48,33 @@ forestry.dat$Area.2$n_restore_peatland <- repExpVal(forestry.dat$Area.2$n_restor
 forestry.dat$Area.1$d_wt_drained <- repExpVal(forestry.dat$Area.1$d_wt_drained)
 forestry.dat$Area.2$d_wt_drained <- repExpVal(forestry.dat$Area.2$d_wt_drained)
 
-
-
 ################################################################################
-############################# Load decay parameters ############################
+######################### Load decay and 3PG parameters ########################
 ################################################################################
 
-alpha_df <- read_xlsx(path,
+parms_decay <- read_xlsx(path,
                       sheet = "Decay rate parms",
                       range = "A1:F10",
                       progress = F)
+
+parms_3PG <- read_excel(path,
+                        sheet = "3PG parms",
+                        range = "A1:E24",
+                        progress = F)
+
+# Re-format
+parms_3PG <- as.data.frame(parms_3PG %>%
+                             filter(complete.cases(.)) %>%
+                             select(Var_name, all_of(c("Scots_Pine", "Sitka_Spruce"))))
+
+parms_fE <-  read_excel(path,
+                        sheet = "fE YC coefficients",
+                        range = "A1:H7",
+                        progress = F)
+
+forestry.dat$parms_decay <- parms_decay
+forestry.dat$parms_3PG <- parms_3PG
+forestry.dat$parms_fE <- parms_fE
 
 ################################################################################
 ##################### CO2 sequestration loss from Forestry #####################
@@ -86,8 +103,7 @@ L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
 
 L_forest <- HarvestingManagementMod(forestry.dat,
                                     growthYield.dat,
-                                    S_forest,
-                                    alpha_df)
+                                    S_forest)
 
 ################################################################################
 ############################### Loss of Soil CO2 ###############################

@@ -29,16 +29,36 @@ if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), 
 }
 
 ################################################################################
-############################# Load decay parameters ############################
+######################### Load decay and 3PG parameters ########################
 ################################################################################
 
-alpha_df <- read_xlsx(path,
-                      sheet = "Decay rate parms",
-                      range = "A1:F10",
-                      progress = F)
+parms_decay <- read_xlsx(path,
+                         sheet = "Decay rate parms",
+                         range = "A1:F10",
+                         progress = F)
 
-alpha_df$delta <- 0.5
-alpha_df <- as.data.frame(alpha_df)
+parms_3PG <- read_excel(path,
+                        sheet = "3PG parms",
+                        range = "A1:E24",
+                        progress = F)
+
+# Re-format
+parms_3PG <- as.data.frame(parms_3PG %>%
+                             filter(complete.cases(.)) %>%
+                             select(Var_name, all_of(c("Scots_Pine", "Sitka_Spruce"))))
+
+parms_fE <-  read_excel(path,
+                        sheet = "fE YC coefficients",
+                        range = "A1:H7",
+                        progress = F)
+
+parms_decay$delta <- 0.5
+parms_decay <- as.data.frame(parms_decay)
+
+forestry.dat$parms_decay <- parms_decay
+forestry.dat$parms_3PG <- parms_3PG
+forestry.dat$parms_fE <- parms_fE
+
 
 ################################################################################
 ########################## Get list of controlled pars #########################
@@ -193,8 +213,7 @@ if (1) {
 
       L_forest <- HarvestingManagementMod(forestry.dat_j,
                                           growthYield.dat,
-                                          S_forest,
-                                          alpha_df)
+                                          S_forest)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
@@ -261,7 +280,7 @@ if (1) {
   ## Repeat for decay parameters
 
   # Initialise parallel implementation
-  numCores <- min(2*nrow(alpha_df), detectCores() - 1)
+  numCores <- min(2*nrow(forestry.dat$parms_decay), detectCores() - 1)
   cl <- makeCluster(numCores)
   registerDoParallel(cl)
 
@@ -272,7 +291,7 @@ if (1) {
   r_files <- list.files(script_dir, pattern = "\\.R$", full.names = TRUE)
 
   # Export the list of files to all workers
-  clusterExport(cl, varlist = c("r_files", "forestry.dat", "alpha_df"))
+  clusterExport(cl, varlist = c("r_files", "forestry.dat"))
 
   # Source the files on each worker
   clusterEvalQ(cl, {
@@ -284,24 +303,26 @@ if (1) {
     }
   })
 
-  sensitivity_resB <- foreach(i = 1:(2*nrow(alpha_df)),
+  sensitivity_resB <- foreach(i = 1:(2*nrow(forestry.dat$parms_decay)),
                               .packages = c("readxl", "tidyverse", "purrr"),
                               .combine=rbind) %dopar% {
 
     res_j <- c()
 
-    if (i >= (nrow(alpha_df)+1)) {
-      k <- i - nrow(alpha_df)
+    if (i >= (nrow(forestry.dat$parms_decay)+1)) {
+      k <- i - nrow(forestry.dat$parms_decay)
       l <- 6
     } else {
       k <- i
       l <- 4
     }
 
-    var_name <- alpha_df$Var[k]
-    if (i > nrow(alpha_df)) {
+    var_name <- forestry.dat$parms_decay$Var[k]
+    if (i > nrow(forestry.dat$parms_decay)) {
       var_name <- stringr::str_replace(var_name, "alpha", "delta")
     }
+
+    alpha_df <- forestry.dat$parms_decay
 
     for (j in seq(0.2,2,by=0.2)) {
 
@@ -309,6 +330,7 @@ if (1) {
 
       alpha_df_j[k,l] <- alpha_df_j[k,l] * j
 
+      forestry.dat$parms_decay <- alpha_df_j
 
       ################################################################################
       ##################### CO2 sequestration loss from Forestry #####################
@@ -337,8 +359,7 @@ if (1) {
 
       L_forest <- HarvestingManagementMod(forestry.dat,
                                           growthYield.dat,
-                                          S_forest,
-                                          alpha_df_j)
+                                          S_forest)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
@@ -387,12 +408,13 @@ if (1) {
       res_j <- rbind(res_j,
                      data.frame(var = var_name,
                                 sca = j,
-                                val = alpha_df_j[k,l],
+                                val = forestry.dat$parms_decay[k,l],
                                 t_flux = (t_payback_res %>%
                                             filter(Est == "Exp", metric == "t_flux"))$t,
                                 t_payback = (t_payback_res %>%
                                                filter(Est == "Exp", metric == "t_payback"))$t))
 
+      forestry.dat$parms_decay <- alpha_df
 
     }
     rownames(res_j) <- NULL

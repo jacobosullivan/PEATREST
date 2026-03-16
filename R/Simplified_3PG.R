@@ -6,20 +6,9 @@ ForestSequestrationMod <- function(forestry.dat) {
 
   # This function models the carbon sequestration (potential) of the forestry
 
-  # # Get 3PG templates
-  parms_3PG <- read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
-                          sheet = "3PG parms",
-                          range = "A1:E24")
-
-  species <- c("Scots_Pine", "Sitka_Spruce")
-
-  parms_3PG <- as.data.frame(parms_3PG %>%
-                               filter(complete.cases(.)) %>%
-                               select(Var_name, all_of(species)))
-
-  f_E_coef <-  read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
-                          sheet = "fE YC coefficients",
-                          range = "A1:H7")
+  # Get 3PG templates
+  parms_3PG <- forestry.dat$parms_3PG
+  parms_fE <- forestry.dat$parms_fE
 
   # Extract input variables for easy access
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
@@ -31,7 +20,7 @@ ForestSequestrationMod <- function(forestry.dat) {
                       Spp_a <- species[Spp[[x]][1]]
                       YC_a <- YC[[x]]
 
-                      aa <- f_E_coef %>%
+                      aa <- parms_fE %>%
                         filter(spp == Spp_a) %>%
                         filter(y=="NPP_max", x=="YC") %>%
                         select(-c(y, x, spp)) %>%
@@ -49,7 +38,7 @@ ForestSequestrationMod <- function(forestry.dat) {
                   Spp_a <- species[Spp[[x]][1]]
                   NPP_Max_a <- NPP_Max[[x]]
 
-                  aa <- f_E_coef %>%
+                  aa <- parms_fE %>%
                     filter(spp == Spp_a) %>%
                     filter(y=="f_E", x=="NPP_max_LCA") %>%
                     select(-c(y, x, spp)) %>%
@@ -269,7 +258,7 @@ if(0) {
                                filter(complete.cases(.)) %>%
                                select(Var_name, all_of(species)))
 
-  f_E_coef <-  read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
+  parms_fE <-  read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
                           sheet = "fE YC coefficients",
                           range = "A1:H7")
 
@@ -283,7 +272,7 @@ if(0) {
                       Spp_a <- species[Spp]
                       YC_a <- YC[x]
 
-                      aa <- f_E_coef %>%
+                      aa <- parms_fE %>%
                         filter(spp == Spp_a) %>%
                         filter(y=="NPP_max", x=="YC") %>%
                         select(-c(y, x, spp)) %>%
@@ -300,7 +289,7 @@ if(0) {
                   Spp_a <- species[Spp]
                   NPP_Max_a <- NPP_Max[x]
 
-                  aa <- f_E_coef %>%
+                  aa <- parms_fE %>%
                     filter(spp == Spp_a) %>%
                     filter(y=="f_E", x=="NPP_max_LCA") %>%
                     select(-c(y, x, spp)) %>%

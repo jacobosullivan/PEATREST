@@ -2,13 +2,11 @@
 #' @param forestry.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @param S_forest 3PG output
-#' @param alpha_df dataframe of decay rates / efficiencies
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
 HarvestingManagementMod <- function(forestry.dat,
-                                        growthYield.dat,
-                                        S_forest,
-                                        alpha_df) {
+                                    growthYield.dat,
+                                    S_forest) {
 
   # This function models the emissions/losses associated with havesting and management
   # including discrete emissions due to mechanised interventions and time dependent
@@ -21,6 +19,7 @@ HarvestingManagementMod <- function(forestry.dat,
   Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
   YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
   t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow")
+  parms_decay <- forestry.dat$parms_decay
 
   # Emissions factors
   E_transport <- rep(list(forestry.dat$Emissions$E_transport / 1e6), length = length(grep("Area", names(forestry.dat)))) # convert from g CO2 km-1 to t CO2 km-3
@@ -172,7 +171,7 @@ HarvestingManagementMod <- function(forestry.dat,
   alpha <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {
       ## if distance to processing sites not passed, assume forestry products left in situ
-      alpha_a <- alpha_df %>%
+      alpha_a <- parms_decay %>%
         filter(Type == "Unprocessed")
 
       if (mulch[[x]][1]==1) {
@@ -183,7 +182,7 @@ HarvestingManagementMod <- function(forestry.dat,
           filter(Compartment != "Mulch")
       }
     } else {
-      alpha_a <- alpha_df %>%
+      alpha_a <- parms_decay %>%
         filter(Type == "Processed" | Compartment == "Foliage" | Compartment == "Roots")
     }
     alpha_wp <- alpha_a$alpha
@@ -197,7 +196,7 @@ HarvestingManagementMod <- function(forestry.dat,
   delta <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {
       ## if distance to processing sites not passed, assume forestry products left in situ
-      delta_a <- alpha_df %>%
+      delta_a <- parms_decay %>%
         filter(Type == "Unprocessed")
 
       if (mulch[[x]][1]==1) {
@@ -212,7 +211,7 @@ HarvestingManagementMod <- function(forestry.dat,
       names(delta_wp) <- stringr::str_replace(delta_a$Var, "alpha_", "")
 
     } else {
-      delta_a <- alpha_df %>%
+      delta_a <- parms_decay %>%
         filter(Type == "Processed" | Compartment == "Foliage" | Compartment == "Roots")
 
       delta_wp <- delta_a$delta
