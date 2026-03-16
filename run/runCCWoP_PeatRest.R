@@ -41,10 +41,10 @@ forestry.dat$Root.depth$d_root_max <- repExpVal(forestry.dat$Root.depth$d_root_m
 forestry.dat$Root.depth$rho_r_soil <- repExpVal(forestry.dat$Root.depth$rho_r_soil)
 forestry.dat$Area.1$t_fallow <- repExpVal(forestry.dat$Area.1$t_fallow)
 forestry.dat$Area.2$t_fallow <- repExpVal(forestry.dat$Area.2$t_fallow)
-forestry.dat$Area.1$t_rest <- repExpVal(forestry.dat$Area.1$t_rest)
-forestry.dat$Area.2$t_rest <- repExpVal(forestry.dat$Area.2$t_rest)
-forestry.dat$Area.1$n_rest <- repExpVal(forestry.dat$Area.1$n_rest)
-forestry.dat$Area.2$n_rest <- repExpVal(forestry.dat$Area.2$n_rest)
+forestry.dat$Area.1$t_restore_peatland <- repExpVal(forestry.dat$Area.1$t_restore_peatland)
+forestry.dat$Area.2$t_restore_peatland <- repExpVal(forestry.dat$Area.2$t_restore_peatland)
+forestry.dat$Area.1$n_restore_peatland <- repExpVal(forestry.dat$Area.1$n_restore_peatland)
+forestry.dat$Area.2$n_restore_peatland <- repExpVal(forestry.dat$Area.2$n_restore_peatland)
 forestry.dat$Area.1$d_wt_drained <- repExpVal(forestry.dat$Area.1$d_wt_drained)
 forestry.dat$Area.2$d_wt_drained <- repExpVal(forestry.dat$Area.2$d_wt_drained)
 
@@ -63,20 +63,20 @@ alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",
 ##################### CO2 sequestration loss from Forestry #####################
 ################################################################################
 
-S_forest <- C_sequest_in_trees_RM(forestry.dat)
+S_forest <- ForestSequestrationMod(forestry.dat)
 
 ################################################################################
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat,
-                                                    growthYield.dat)
+L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat,
+                                          growthYield.dat)
 
 ################################################################################
 ################ Aquatic carbon loss from soils under Forestry #################
 ################################################################################
 
-L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat,
+L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
                                           L_forest_soils,
                                           forest_soils = T)
 
@@ -84,29 +84,22 @@ L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat,
 ############ Harvesting/Restoration emissions and wood product decay ###########
 ################################################################################
 
-L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat,
-                                        growthYield.dat,
-                                        S_forest,
-                                        alpha_df)
-
-################################################################################
-########################## Emissions rates from soils ##########################
-################################################################################
-
-R_tot <- Emissions_rates_soils_RM(forestry.dat)
+L_forest <- HarvestingManagementMod(forestry.dat,
+                                    growthYield.dat,
+                                    S_forest,
+                                    alpha_df)
 
 ################################################################################
 ############################### Loss of Soil CO2 ###############################
 ################################################################################
 
-L_peatland <- CO2_loss_restoration(forestry.dat,
-                                   R_tot)
+L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat)
 
 ################################################################################
 ###################### Aquatic carbon loss from peatland #######################
 ################################################################################
 
-L_AqC_peatland <- CO2_loss_DOC_POC_RM(forestry.dat,
+L_AqC_peatland <- AquaticCarbonMod(forestry.dat,
                                       L_peatland,
                                       forest_soils = F)
 
@@ -132,12 +125,12 @@ res %>%
   filter(model=="Peatland")
 
 # Check no change in result
-# res0 <- read.csv("../Data/res_final.csv")
-# par(mfrow=c(1,2))
-# hist(res$value-res0$value)
-# plot(res$value-res0$value)
+res0 <- read.csv("../Data/res_final.csv")
+par(mfrow=c(1,2))
+hist(res$value-res0$value)
+plot(res$value-res0$value)
 
-t_payback_res <- Carbon_payback_time(res, sum_areas = F)
+t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 # t_payback_res %>% filter(Area == "Area.1")
 # t_payback_res %>% filter(Area == "Area.2")
 

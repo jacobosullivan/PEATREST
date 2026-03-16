@@ -12,7 +12,7 @@ devtools::document()
 ############################# Load input data from UI ##########################
 ################################################################################
 
-path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1.xlsx" # select user input spreadsheet
+path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1 - Sensitivity.xlsx" # select user input spreadsheet
 
 forestry.dat <- getData(path)$forestry.dat
 forestry.dat <- forestry.dat[1:(length(forestry.dat)-1)] # drop area 2
@@ -117,6 +117,8 @@ if (1) { # remove variables only relevant to windfarm LCA. This will likely be r
                                               "fert")]
 }
 
+# forestry.dat$Area.1$YC[1] <- 10
+
 if (1) {
 
   # Initialise parallel implementation
@@ -163,15 +165,15 @@ if (1) {
       ##################### CO2 sequestration loss from Forestry #####################
       ################################################################################
 
-      S_forest <- C_sequest_in_trees_RM(forestry.dat_j)
+      S_forest <- ForestSequestrationMod(forestry.dat_j)
 
       ################################################################################
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
       skipIteration <- F
-      tryCatch(L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat_j,
-                                                                   growthYield.dat),
+      tryCatch(L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat_j,
+                                                         growthYield.dat),
         error = function(e) skipIteration <<- T)
       if (skipIteration) next
 
@@ -180,7 +182,7 @@ if (1) {
       ################ Aquatic carbon loss from soils under Forestry #################
       ################################################################################
 
-      L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat_j,
+      L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat_j,
                                                 L_forest_soils,
                                                 forest_soils = T)
 
@@ -188,10 +190,10 @@ if (1) {
       ############ Harvesting/Restoration emissions and wood product decay ###########
       ################################################################################
 
-      L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat_j,
-                                              growthYield.dat,
-                                              S_forest,
-                                              alpha_df)
+      L_forest <- HarvestingManagementMod(forestry.dat_j,
+                                          growthYield.dat,
+                                          S_forest,
+                                          alpha_df)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
@@ -203,14 +205,13 @@ if (1) {
       ############################### Loss of Soil CO2 ###############################
       ################################################################################
 
-      L_peatland <- CO2_loss_restoration(R_tot,
-                                         forestry.dat_j)
+      L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat_j)
 
       ################################################################################
       ###################### Aquatic carbon loss from peatland #######################
       ################################################################################
 
-      L_AqC_peatland <- CO2_loss_DOC_POC_RM(forestry.dat_j,
+      L_AqC_peatland <- AquaticCarbonMod(forestry.dat_j,
                                             L_peatland,
                                             forest_soils = F)
 
@@ -225,7 +226,7 @@ if (1) {
                          L_peatland,
                          L_AqC_peatland)
 
-      t_payback_res <- Carbon_payback_time(res, sum_areas = F)
+      t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 
       if (0) {
         # p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"), plabs = paste0("YC", forestry.dat$Area.1$YC[c(2,1,3)]))
@@ -312,20 +313,20 @@ if (1) {
       ##################### CO2 sequestration loss from Forestry #####################
       ################################################################################
 
-      S_forest <- C_sequest_in_trees_RM(forestry.dat)
+      S_forest <- ForestSequestrationMod(forestry.dat)
 
       ################################################################################
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
-      L_forest_soils <- Emissions_rates_forestry_soils_RM(forestry.dat,
-                                                          growthYield.dat)
+      L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat,
+                                                growthYield.dat)
 
       ################################################################################
       ################ Aquatic carbon loss from soils under Forestry #################
       ################################################################################
 
-      L_AqC_forest_soils <- CO2_loss_DOC_POC_RM(forestry.dat,
+      L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
                                                 L_forest_soils,
                                                 forest_soils = T)
 
@@ -333,10 +334,10 @@ if (1) {
       ############ Harvesting/Restoration emissions and wood product decay ###########
       ################################################################################
 
-      L_forest <- Forestry_CO2_loss_detail_RM(forestry.dat,
-                                              growthYield.dat,
-                                              S_forest,
-                                              alpha_df_j)
+      L_forest <- HarvestingManagementMod(forestry.dat,
+                                          growthYield.dat,
+                                          S_forest,
+                                          alpha_df_j)
 
       ################################################################################
       ########################## Emissions rates from soils ##########################
@@ -348,14 +349,13 @@ if (1) {
       ############################### Loss of Soil CO2 ###############################
       ################################################################################
 
-      L_peatland <- CO2_loss_restoration(R_tot,
-                                         forestry.dat)
+      L_peatland <- PeatlandSoilsEmissionsMod(forestry.dat)
 
       ################################################################################
       ###################### Aquatic carbon loss from peatland #######################
       ################################################################################
 
-      L_AqC_peatland <- CO2_loss_DOC_POC_RM(forestry.dat,
+      L_AqC_peatland <- AquaticCarbonMod(forestry.dat,
                                             L_peatland,
                                             forest_soils = F)
 
@@ -370,7 +370,7 @@ if (1) {
                          L_peatland,
                          L_AqC_peatland)
 
-      t_payback_res <- Carbon_payback_time(res, sum_areas = F)
+      t_payback_res <- CarbonMitigationMod(res, sum_areas = F)
 
       if (0) {
         p_L_forest <- plotL_forest(res %>% filter(Est == "Exp"))
@@ -401,7 +401,7 @@ if (1) {
   stopCluster(cl)
 
   sensitivity_res <- rbind(sensitivity_resA, sensitivity_resB)
-  write.csv(sensitivity_res, "../Data/sensitivity_res_YC8.csv", row.names=F)
+  write.csv(sensitivity_res, "../Data/sensitivity_res_YC10.csv", row.names=F)
 } else {
   sensitivity_res <- read.csv("../Data/sensitivity_res_YC8.csv")
 }

@@ -1,4 +1,4 @@
-## 5e. Emission rates from soils
+## Peatland emissions regression modelling. METAR21_XXX (Evans et al. 2021) used in LCA
 
 #' IPCC_CO2
 #' @return CO2 emissions rate IPCC Acid bog AND Fen
@@ -86,151 +86,17 @@ METAR97_CH4_F <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
   return(list(R_CH4 = (CH4_CO2/1000) * (-10 + 563.6253 * exp(-0.09702 * (100*d_wt)) + (0.662183*T_air))))
 }
 
-#' Emissions_rates_soils
-#' @param core.dat UI data
-#' @param construct.dat UI construction data
-#' @param AV_indirect Area/Volume of drained peat
-#' @return Emissions rates from drained and undrained peatland
-#' @export
-Emissions_rates_soils <- function(core.dat,
-                                  construct.dat,
-                                  AV_indirect) {
-
-  # THIS FUNCTION...
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
-
-  # Extract inputs for easy access
-  em_factor_meth_in <- core.dat$Em.factor.meth$em_factor_meth_in # Select IPCC default or ECOSSE model
-  peat_type <- core.dat$Peatland$peat_type # Select acid bog or fen
-  A_indirect <- AV_indirect$Total$a # Area peat drained
-  V_indirect <- AV_indirect$Total$v # Volume peat drained
-  T_air <- core.dat$Peatland$T_air # Average air temperature
-  d_wt <- core.dat$Peatland$d_wt[c(1,3,2)] # Average water table depth pre-development/restoration, re-order Min/Max
-  names(d_wt) <- c("Exp", "Min", "Max")
-
-  if (em_factor_meth_in[1] == 1) { # IPCC default calculation used
-
-    if (peat_type[1] == 1) { # Acid bog selected
-      R_CH4_wet <- IPCC_CH4_AB(CH4_CO2)
-    } else { # Fen selected
-      R_CH4_wet <- IPCC_CH4_F(CH4_CO2)
-    }
-
-    R_CO2_dry <- IPCC_CO2() # Identical for both peat types
-    R_CO2_wet <- list(R_CO2 = c(Exp = 0, Min = 0, Max = 0)) # Assumption
-    R_CH4_dry <- list(R_CH4 = c(Exp = 0, Min = 0, Max = 0)) # Assumption
-
-  } else { # Site specific calculation using meta-analytic regression method
-
-    d_wt_drained <- apply(cbind(V_indirect/A_indirect,d_wt), MAR=1, FUN=max)[c(1,3,2)] # re-order Min/Max
-    names(d_wt_drained) <- c("Exp", "Min", "Max")
-
-    if (peat_type[1] == 1) { # Acid bog selected
-
-      if (0) {
-        R_CO2_dry <- METAR97_CO2_AB(CO2_C, d_wt_drained, T_air)
-        R_CO2_wet <- METAR97_CO2_AB(CO2_C, d_wt, T_air)
-
-        R_CH4_dry <- METAR97_CH4_AB(CH4_CO2, d_wt_drained, T_air)
-        R_CH4_wet <- METAR97_CH4_AB(CH4_CO2, d_wt, T_air)
-      } else {
-        R_CO2_dry <- METAR21_CO2(CO2_C, d_wt_drained)
-        R_CO2_wet <- METAR21_CO2(CO2_C, d_wt)
-
-        R_CH4_dry <- METAR21_CH4(CO2_C, d_wt_drained)
-        R_CH4_wet <- METAR21_CH4(CO2_C, d_wt)
-      }
-
-
-    } else { # Fen selected
-
-      if (0) {
-        R_CO2_dry <- METAR97_CO2_F(CO2_C, d_wt_drained, T_air)
-        R_CO2_wet <- METAR97_CO2_F(CO2_C, d_wt, T_air)
-
-        R_CH4_dry <- METAR97_CH4_F(CH4_CO2, d_wt_drained, T_air)
-        R_CH4_wet <- METAR97_CH4_F(CH4_CO2, d_wt, T_air)
-      } else {
-        R_CO2_dry <- METAR21_CO2(CO2_C, d_wt_drained)
-        R_CO2_wet <- METAR21_CO2(CO2_C, d_wt)
-
-        R_CH4_dry <- METAR21_CH4(CO2_C, d_wt_drained)
-        R_CH4_wet <- METAR21_CH4(CO2_C, d_wt)
-      }
-
-    }
-
-  }
-
-  R_tot <- list(R_CO2_dry=R_CO2_dry$R_CO2,
-                R_CO2_wet=R_CO2_wet$R_CO2,
-                R_CH4_dry=R_CH4_dry$R_CH4,
-                R_CH4_wet=R_CH4_wet$R_CH4)
-
-  return(R_tot)
-}
-
-#' Emissions_rates_soils
-#' @param forestry.dat UI forestry data
-#' @return Emissions rates from drained and undrained peatland
-#' @export
-Emissions_rates_soils_RM <- function(forestry.dat) {
-
-  # THIS FUNCTION...
-  CO2_C <- 3.667 # Molecular weight ratio C to CO2
-  CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
-
-  # Extract UI forestry WTD and modify to represent hydrological impact of harvesting
-  # 45% reduction in WTD following removal of trees: crude estimate from Gaffney et al. 2018
-  d_wt_drained <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_drained") # User estimated average water table depth pre-restoration
-  d_wt_drained <- lapply(d_wt_drained, FUN = function(x) {
-    x <- x * (1 - 0.45)
-    names(x) <- c("Exp", "Min", "Max")
-    return(x)
-  })
-
-  # User estimated average water table depth post-restoration - default values from pristine bog controls set to 5 (1, 10) cm, Gaffney et al. (2018)
-  d_wt_restored <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_restored")
-
-  R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
-    METAR21_CO2(CO2_C, x)
-  })
-
-  R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
-    METAR21_CO2(CO2_C, x)
-  })
-
-  R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
-    METAR21_CH4(CO2_C, x)
-  })
-
-  R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
-    METAR21_CH4(CO2_C, x)
-  })
-
-  # Invert data structure
-  R_tot <- vector(mode = "list", length = length(d_wt_drained))
-  names(R_tot) <- names(d_wt_drained)
-  for (i in 1:length(R_tot)) {
-    R_tot[[i]]$R_CO2_dry <- R_CO2_dry[[i]]$R_CO2
-    R_tot[[i]]$R_CO2_wet <- R_CO2_wet[[i]]$R_CO2
-    R_tot[[i]]$R_CH4_dry <- R_CH4_dry[[i]]$R_CH4
-    R_tot[[i]]$R_CH4_wet <- R_CH4_wet[[i]]$R_CH4
-  }
-
-  return(R_tot)
-}
-
-#' Emissions_rates_forestry_soils_RM
+#' ForestSoilsEmissionsMod
 #' @param forestry.dat UI forestry data
 #' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @return Emissions rates from drained soils under trees
 #' @export
-Emissions_rates_forestry_soils_RM <- function(forestry.dat,
-                                              growthYield.dat) {
+ForestSoilsEmissionsMod <- function(forestry.dat,
+                                    growthYield.dat) {
 
-  # THIS FUNCTION...
+  # This function models the water table below the tree and thereby the emissions
+  # from the drained peats
+
   CO2_C <- 3.667 # Molecular weight ratio C to CO2
   CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
 
@@ -397,4 +263,241 @@ Emissions_rates_forestry_soils_RM <- function(forestry.dat,
 
   }
   return(L_tot)
+}
+
+#' PeatlandSoilsEmissionsMod
+#' @param forestry.dat UI forestry data
+#' @param R_tot estimated emissions rates
+#' @return L_indirect
+#' @export
+PeatlandSoilsEmissionsMod <- function(forestry.dat) {
+
+  ## This function will estimate the emissions from the site following harvesting and restoration interventions
+  ## assuming a non-linear restoration of ecosystem function parameterised by the user
+
+  CO2_C <- 3.667 # Molecular weight ratio C to CO2
+  CH4_CO2 <- 30.66667 # CH4 to CO2 conversion factor
+
+  # Extract UI forestry WTD and modify to represent hydrological impact of harvesting
+  # 45% reduction in WTD following removal of trees: crude estimate from Gaffney et al. 2018
+  d_wt_drained <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_drained") # User estimated average water table depth pre-restoration
+  d_wt_drained <- lapply(d_wt_drained, FUN = function(x) {
+    x <- x * (1 - 0.45)
+    names(x) <- c("Exp", "Min", "Max")
+    return(x)
+  })
+
+  # User estimated average water table depth post-restoration - default values from pristine bog controls set to 5 (1, 10) cm, Gaffney et al. (2018)
+  d_wt_restored <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "d_wt_restored")
+
+  R_CO2_dry <- lapply(d_wt_drained, FUN = function(x) {
+    METAR21_CO2(CO2_C, x)
+  })
+
+  R_CO2_wet <- lapply(d_wt_restored, FUN = function(x) {
+    METAR21_CO2(CO2_C, x)
+  })
+
+  R_CH4_dry <- lapply(d_wt_drained, FUN = function(x) {
+    METAR21_CH4(CO2_C, x)
+  })
+
+  R_CH4_wet <- lapply(d_wt_restored, FUN = function(x) {
+    METAR21_CH4(CO2_C, x)
+  })
+
+  # Invert data structure
+  R_tot <- vector(mode = "list", length = length(d_wt_drained))
+  names(R_tot) <- names(d_wt_drained)
+  for (i in 1:length(R_tot)) {
+    R_tot[[i]]$R_CO2_dry <- R_CO2_dry[[i]]$R_CO2
+    R_tot[[i]]$R_CO2_wet <- R_CO2_wet[[i]]$R_CO2
+    R_tot[[i]]$R_CH4_dry <- R_CH4_dry[[i]]$R_CH4
+    R_tot[[i]]$R_CH4_wet <- R_CH4_wet[[i]]$R_CH4
+  }
+
+  conv_val <- 0.999 # convergence value required by arbitrary convergent function
+
+  AVG_WTD <- T # if TRUE remove partitioning into flooded and unflooded days and assume that annual average WTD can be used
+  # Averages will work so long as R_CX ~ WTD is approximately linear. This is true for CO2 in the range WTD = [0,1m] but NOT for CH4
+  # Thus, average WTD will systematically under estimate methane emissions
+
+  # Extract input variables for easy access
+  A_harv <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "A_harv") # in units ha
+  t_fallow <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_fallow") # time between felling and restoration
+  t_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "t_restore_peatland") # time to restoration of microbial function
+  n_restore <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "n_restore_peatland") # shape parameter for restoration of microbial function
+
+  ## Compute emissions rates from deforested, unrestored peatland
+
+  if (!AVG_WTD) { # partition into flooded and unflooded days. 2 values of WTD needed in principle
+
+    D_f <- 0 # Assume flooded days per year D_f = 0 for drained, unrestored peats
+    pD_f <- D_f / 365
+
+    CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CO2_dry) <- names(A_harv)
+
+    CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CH4_dry) <- names(A_harv)
+
+  } else { # take the annual average water table depth (robust in linear region of emissions function)
+
+    CO2_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CO2_dry
+      return(res)
+    })
+    names(CO2_dry) <- names(A_harv)
+
+    CH4_dry <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CH4_dry
+      return(res)
+    })
+    names(CH4_dry) <- names(A_harv)
+
+  }
+
+  ## Compute emissions rates from deforested, restored peatland
+
+  if (!AVG_WTD) { # partition into flooded and unflooded days. 2 values of WTD needed in principle
+
+    if (peat_type[1] == 1) { # Acid bog selected
+      D_f <- 178
+    } else {
+      D_f <- 169
+    }
+    pD_f <- D_f / 365
+
+    CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CO2_wet * pD_f) + (R_tot[[x]]$R_CO2_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CO2_wet) <- names(A_harv)
+
+    CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * ((R_tot[[x]]$R_CH4_wet * pD_f) + (R_tot[[x]]$R_CH4_dry * (1 - pD_f)))
+      return(res)
+    })
+    names(CH4_wet) <- names(A_harv)
+
+  } else { # take the annual average water table depth (robust in linear region of emissions function)
+
+    CO2_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CO2_wet
+      return(res)
+    })
+    names(CO2_wet) <- names(A_harv)
+
+    CH4_wet <- lapply(seq_along(A_harv), FUN = function(x) {
+      res <- A_harv[[x]] * R_tot[[x]]$R_CH4_wet
+      return(res)
+    })
+    names(CH4_wet) <- names(A_harv)
+
+  }
+
+  ## Interpolate emissions across restoration phase (arbitrary asymptotic function)
+  L_CO2_peatland <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
+      rest_dyn_mod(t = 1:t_restore[[x]][y],
+                   n = n_restore[[x]][y],
+                   ymin = CO2_dry[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   ymax = CO2_wet[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   convThresh = conv_val)
+    })
+    names(res) <- names(A_harv[[x]])
+    return(res)
+  })
+
+  L_CH4_peatland <- lapply(seq_along(A_harv), FUN = function(x) {
+    res <- lapply(seq_along(A_harv[[x]]), FUN = function(y) {
+      rest_dyn_mod(t = 1:t_restore[[x]][y],
+                   n = n_restore[[x]][y],
+                   ymin = CH4_dry[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   ymax = CH4_wet[[x]][y], # pre-restoration CO2 emissions rate scaled by area (units CO2)
+                   convThresh = conv_val)
+    })
+    names(res) <- names(A_harv[[x]])
+    return(res)
+  })
+
+  # Add fallow period to time series
+  L_CO2_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      return(c(rep(CO2_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CO2_peatland[[x]][y]))))
+    })
+    names(res) <- names(L_CO2_peatland[[x]])
+    return(res)
+  })
+
+  L_CH4_peatland <- lapply(seq_along(L_CH4_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      return(c(rep(CH4_dry[[x]][y], t_fallow[[x]][y]), unname(unlist(L_CH4_peatland[[x]][y]))))
+    })
+    names(res) <- names(L_CH4_peatland[[x]])
+    return(res)
+  })
+
+  # Extend time series to 500 years (if t_payback > 500, these will need to be extended again in the run script)
+  L_CO2_peatland <- lapply(seq(L_CO2_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CO2_peatland[[x]][y]))
+      return(unname(c(unlist(L_CO2_peatland[[x]][y]), rep(CO2_wet[[x]][y], ext))))
+    })
+    names(res) <- names(L_CO2_peatland[[x]])
+    return(res)
+  })
+
+  L_CH4_peatland <- lapply(seq(L_CH4_peatland), FUN = function(x) {
+    res <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      ext <- 501 - length(unlist(L_CH4_peatland[[x]][y]))
+      return(unname(c(unlist(L_CH4_peatland[[x]][y]), rep(CH4_wet[[x]][y], ext))))
+    })
+    names(res) <- names(L_CH4_peatland[[x]])
+    return(res)
+  })
+
+  # Update data structure to timeseries/dataframes
+  L_CO2_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function (x) {
+    L_CO2_peatland_a <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CO2_peatland[[x]][[y]])-1),
+                      L_CO2 = L_CO2_peatland[[x]][[y]])
+      return(L)
+    })
+    names(L_CO2_peatland_a) <- names(L_CO2_peatland[[x]])
+    return(L_CO2_peatland_a)
+  })
+
+  L_CH4_peatland <- lapply(seq_along(L_CH4_peatland), FUN = function (x) {
+    L_CH4_peatland_a <- lapply(seq_along(L_CH4_peatland[[x]]), FUN = function(y) {
+      L <- data.frame(t = 0:(length(L_CH4_peatland[[x]][[y]])-1),
+                      L_CH4 = L_CH4_peatland[[x]][[y]])
+      return(L)
+    })
+    names(L_CH4_peatland_a) <- names(L_CH4_peatland[[x]])
+    return(L_CH4_peatland_a)
+  })
+
+  names(L_CO2_peatland) <- names(A_harv)
+  names(L_CH4_peatland) <- names(A_harv)
+
+  L_peatland <- lapply(seq_along(L_CO2_peatland), FUN = function (x) {
+    L_peatland_a <- lapply(seq_along(L_CO2_peatland[[x]]), FUN = function(y) {
+      L <- L_CO2_peatland[[x]][[y]]
+      L$L_CH4 <- L_CH4_peatland[[x]][[y]]$L_CH4
+      return(L)
+    })
+    names(L_peatland_a) <- names(L_CO2_peatland[[x]])
+    return(L_peatland_a)
+  })
+
+  names(L_peatland) <- names(A_harv)
+
+  return(L_peatland)
 }

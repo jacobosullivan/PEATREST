@@ -1,12 +1,11 @@
-## 1b. Carbon payback time peatland restoration
-
-#' Carbon_payback_time
+#' CarbonMitigationMod
 #' @param res LCA output
 #' @return Carbon payback time/flux intercept
 #' @export
-Carbon_payback_time <- function(res, sum_areas=T) {
+CarbonMitigationMod <- function(res, sum_areas=T) {
 
-  # THIS FUNCTION..
+  # This function computes the carbon mitigation times (carbon flux intercept and carbon payback time)
+  # for a given set of compound time series
 
   if (sum_areas) {
     res_sum <- res %>%
@@ -19,7 +18,7 @@ Carbon_payback_time <- function(res, sum_areas=T) {
       summarise(value = sum(value))
   }
 
-  # THIS FAILS IF PEATLAND NEVER IMPROVES ON FLUXES FROM FORESTRY! FIX
+  # THIS FAILS IF PEATLAND NEVER IMPROVES ON FLUXES FROM FORESTRY!
   t_flux <- left_join(res_sum %>%
                         ungroup() %>%
                         filter(treatment=="CF") %>%
