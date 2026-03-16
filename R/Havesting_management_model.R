@@ -1,11 +1,9 @@
 #' HarvestingManagementMod
 #' @param forestry.dat UI forestry data
-#' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @param S_forest 3PG output
 #' @return Estimated lifetime loss of carbon stored in forestry products
 #' @export
 HarvestingManagementMod <- function(forestry.dat,
-                                    growthYield.dat,
                                     S_forest) {
 
   # This function models the emissions/losses associated with havesting and management
@@ -235,19 +233,19 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(growthYield.dat %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
-      V_a <- growthYield.dat %>%
+      V_a <- forestry.dat$growthYield %>%
         filter(Spp == Spp_a,
                YC == floor(YC_a), # floor required since if YC or t_harv implicitly coerced to floats, filter will fail!
                Age == floor(t_harv_a)) %>%
@@ -424,19 +422,19 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(growthYield.dat %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
-      rho_ag <- growthYield.dat %>%
+      rho_ag <- forestry.dat$growthYield %>%
         filter(Spp == Spp_a,
                YC == floor(YC_a),
                Age == floor(t_harv_a)) %>%
@@ -461,20 +459,20 @@ HarvestingManagementMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(growthYield.dat %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a - YC_avail) == min(abs(YC_a - unlist(YC_avail))))])
 
       ### If t_harv_a is not available, set to min/max as appropriate (unlikely)
-      t_harv_min <- min((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
-      t_harv_max <- max((growthYield.dat %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_min <- min((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
+      t_harv_max <- max((forestry.dat$growthYield %>% filter(Spp == Spp_a, YC == YC_a))$Age)
 
       t_harv_a <- min(max(t_harv_a, t_harv_min), t_harv_max)
 
       if (timber_removed[[x]][1]==1) {
-        rho <- growthYield.dat %>%
+        rho <- forestry.dat$growthYield %>%
           filter(Spp == Spp_a,
                  YC == YC_a,
                  Age == t_harv_a) %>%
@@ -482,13 +480,13 @@ HarvestingManagementMod <- function(forestry.dat,
       } else { # timber left in situ
 
         if (mulch[[x]][1] == 1) { # mulched
-          rho <- growthYield.dat %>%
+          rho <- forestry.dat$growthYield %>%
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%
             select(rho_r, rho_m, rho_f)
         } else { # not mulched
-          rho <- growthYield.dat %>%
+          rho <- forestry.dat$growthYield %>%
             filter(Spp == Spp_a,
                    YC == YC_a,
                    Age == t_harv_a) %>%

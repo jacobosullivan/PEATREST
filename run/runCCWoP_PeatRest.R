@@ -11,12 +11,12 @@ devtools::document()
 path <- "Templates/PEATREST_input_scenario_modelling.xlsx" # select user input spreadsheet
 
 forestry.dat <- getData(path)
-growthYield.dat <- getGrowthYieldData()
+growthYield <- getGrowthYieldData()
 
 ## YC not passed by user, these are estimated from height/age data
 if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), FUN = is.null))) {
   YC <- getYC(forestry.dat,
-              growthYield.dat)
+              growthYield)
   for (i in 1:length(YC)) {
     forestry.dat[[names(YC)[i]]]$YC <- YC[[i]]
   }
@@ -75,6 +75,7 @@ parms_fE <-  read_excel(path,
 forestry.dat$parms_decay <- parms_decay
 forestry.dat$parms_3PG <- parms_3PG
 forestry.dat$parms_fE <- parms_fE
+forestry.dat$growthYield <- growthYield
 
 ################################################################################
 ##################### CO2 sequestration loss from Forestry #####################
@@ -86,8 +87,7 @@ S_forest <- ForestSequestrationMod(forestry.dat)
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat,
-                                          growthYield.dat)
+L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat)
 
 ################################################################################
 ################ Aquatic carbon loss from soils under Forestry #################
@@ -102,7 +102,6 @@ L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
 ################################################################################
 
 L_forest <- HarvestingManagementMod(forestry.dat,
-                                    growthYield.dat,
                                     S_forest)
 
 ################################################################################
@@ -186,7 +185,7 @@ pLCA_cs <- plotLCA_cs(res, t_payback_res, sum_areas = F)
 pES <- plotES(res %>% filter(Area=="Area.1" & Est=="Exp" ),
               t_payback_res %>% filter(Area=="Area.1" & Est=="Exp"))
 
-pWP <- ggplot(growthYield.dat %>% filter(YC %in% c(6, 14), Spp == "Sitka_spruce") %>%
+pWP <- ggplot(forestry.dat$growthYield %>% filter(YC %in% c(6, 14), Spp == "Sitka_spruce") %>%
                 select(YC, Age, rho_Biofuel, rho_wpF, rho_wpM, rho_wpS, rho_wpO) %>%
                 pivot_longer(cols = starts_with("rho_"),
                              names_to = "product") %>%

@@ -88,11 +88,9 @@ METAR97_CH4_F <- function(CH4_CO2, d_wt, T_air) { # converts into CO2 eq units
 
 #' ForestSoilsEmissionsMod
 #' @param forestry.dat UI forestry data
-#' @param growthYield.dat growth and yield data (estimated from CARBINE runs)
 #' @return Emissions rates from drained soils under trees
 #' @export
-ForestSoilsEmissionsMod <- function(forestry.dat,
-                                    growthYield.dat) {
+ForestSoilsEmissionsMod <- function(forestry.dat) {
 
   # This function models the water table below the tree and thereby the emissions
   # from the drained peats
@@ -129,13 +127,13 @@ ForestSoilsEmissionsMod <- function(forestry.dat,
       t_harv_a <- t_harv[[x]][y]
 
       ## Deal with missing YC values from GY table
-      YC_avail <- unlist(growthYield.dat %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
+      YC_avail <- unlist(forestry.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())
 
       ### If YC_a is not available, set to closest value.
       ### If equidistant from multiple available values, maximum is used (conservative estimate of payback time)
       YC_a <- max(YC_avail[which(abs(YC_a0 - YC_avail) == min(abs(YC_a0 - unlist(YC_avail))))])
 
-      res <- growthYield.dat %>%
+      res <- forestry.dat$growthYield %>%
         filter(Spp == Spp_a,
                YC == YC_a) %>%
         select(Age, B_r) %>%
