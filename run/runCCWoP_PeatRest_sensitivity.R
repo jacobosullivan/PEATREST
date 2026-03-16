@@ -58,7 +58,7 @@ parms_decay <- as.data.frame(parms_decay)
 forestry.dat$parms_decay <- parms_decay
 forestry.dat$parms_3PG <- parms_3PG
 forestry.dat$parms_fE <- parms_fE
-
+forestry.dat$growthYield <- growthYield
 
 ################################################################################
 ########################## Get list of controlled pars #########################
@@ -193,8 +193,7 @@ if (1) {
       ################################################################################
 
       skipIteration <- F
-      tryCatch(L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat_j,
-                                                         growthYield.dat),
+      tryCatch(L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat_j),
         error = function(e) skipIteration <<- T)
       if (skipIteration) next
 
@@ -212,7 +211,6 @@ if (1) {
       ################################################################################
 
       L_forest <- HarvestingManagementMod(forestry.dat_j,
-                                          growthYield.dat,
                                           S_forest)
 
       ################################################################################
@@ -342,8 +340,7 @@ if (1) {
       ###################### CO2 loss from soils under Forestry ######################
       ################################################################################
 
-      L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat,
-                                                growthYield.dat)
+      L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat)
 
       ################################################################################
       ################ Aquatic carbon loss from soils under Forestry #################
@@ -358,7 +355,6 @@ if (1) {
       ################################################################################
 
       L_forest <- HarvestingManagementMod(forestry.dat,
-                                          growthYield.dat,
                                           S_forest)
 
       ################################################################################

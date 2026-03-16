@@ -67,6 +67,7 @@ parms_fE <-  read_excel(path,
 forestry.dat$parms_decay <- parms_decay
 forestry.dat$parms_3PG <- parms_3PG
 forestry.dat$parms_fE <- parms_fE
+forestry.dat$growthYield <- growthYield
 
 ################################################################################
 ##################### CO2 sequestration loss from Forestry #####################
@@ -78,8 +79,7 @@ S_forest <- ForestSequestrationMod(forestry.dat)
 ###################### CO2 loss from soils under Forestry ######################
 ################################################################################
 
-L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat,
-                                          growthYield.dat)
+L_forest_soils <- ForestSoilsEmissionsMod(forestry.dat)
 
 ################################################################################
 ################ Aquatic carbon loss from soils under Forestry #################
@@ -94,7 +94,6 @@ L_AqC_forest_soils <- AquaticCarbonMod(forestry.dat,
 ################################################################################
 
 L_forest <- HarvestingManagementMod(forestry.dat,
-                                    growthYield.dat,
                                     S_forest)
 
 ################################################################################
