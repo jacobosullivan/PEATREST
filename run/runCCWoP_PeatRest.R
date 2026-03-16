@@ -8,9 +8,9 @@ devtools::document()
 ############################# Load input data from UI ##########################
 ################################################################################
 
-path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1.xlsx" # select user input spreadsheet
+path <- "Templates/PEATREST_input_scenario_modelling.xlsx" # select user input spreadsheet
 
-forestry.dat <- getData(path)$forestry.dat
+forestry.dat <- getData(path)
 growthYield.dat <- getGrowthYieldData()
 
 ## YC not passed by user, these are estimated from height/age data
@@ -54,8 +54,8 @@ forestry.dat$Area.2$d_wt_drained <- repExpVal(forestry.dat$Area.2$d_wt_drained)
 ############################# Load decay parameters ############################
 ################################################################################
 
-alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",
-                      sheet = "Sheet1",
+alpha_df <- read_xlsx(path,
+                      sheet = "Decay rate parms",
                       range = "A1:F10",
                       progress = F)
 

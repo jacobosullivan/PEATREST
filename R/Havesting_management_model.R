@@ -168,12 +168,6 @@ HarvestingManagementMod <- function(forestry.dat,
 
   names(d_wp) <- names(r_CBiomass)
 
-  # Get exponential decay rates for wood products - this now set in runscript and passed as argument
-  # alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",
-  #                        sheet = "Sheet1",
-  #                        range = "A1:F10",
-  #                        progress = F)
-
   # Get decay rate parameters
   alpha <- lapply(seq_along(d_wp), FUN = function(x) {
     if (all(unlist(d_wp[[x]]) == 0)) {

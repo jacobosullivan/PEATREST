@@ -12,9 +12,9 @@ devtools::document()
 ############################# Load input data from UI ##########################
 ################################################################################
 
-path <- "Templates/Full carbon calculator for windfarms on peatlands - Version 2.14.1 - Sensitivity.xlsx" # select user input spreadsheet
+path <- "Templates/PEATREST_input_sensitivity_analysis.xlsx" # select user input spreadsheet
 
-forestry.dat <- getData(path)$forestry.dat
+forestry.dat <- getData(path)
 forestry.dat <- forestry.dat[1:(length(forestry.dat)-1)] # drop area 2
 
 growthYield.dat <- getGrowthYieldData()
@@ -32,7 +32,8 @@ if (any(sapply(map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC"), 
 ############################# Load decay parameters ############################
 ################################################################################
 
-alpha_df <- read_xlsx("Templates/alpha_wp.xlsx",                                             sheet = "Sheet1",
+alpha_df <- read_xlsx(path,
+                      sheet = "Decay rate parms",
                       range = "A1:F10",
                       progress = F)
 

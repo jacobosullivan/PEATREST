@@ -4,11 +4,11 @@
 #' @export
 ForestSequestrationMod <- function(forestry.dat) {
 
-  # THIS FUNCTION...
+  # This function models the carbon sequestration (potential) of the forestry
 
-  # Get 3PG templates
-  parms_3PG <- read_excel("Templates/3PG_parms.xlsx",
-                          sheet = "3PG_parms",
+  # # Get 3PG templates
+  parms_3PG <- read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
+                          sheet = "3PG parms",
                           range = "A1:E24")
 
   species <- c("Scots_Pine", "Sitka_Spruce")
@@ -17,7 +17,8 @@ ForestSequestrationMod <- function(forestry.dat) {
                                filter(complete.cases(.)) %>%
                                select(Var_name, all_of(species)))
 
-  f_E_coef <-  read_excel("Templates/f_E_coef.xlsx",
+  f_E_coef <-  read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
+                          sheet = "fE YC coefficients",
                           range = "A1:H7")
 
   # Extract input variables for easy access
@@ -184,8 +185,6 @@ run_3PG <- function(t_rotation = 50, # rotation length
   res$Wl[1] <- Wl_init
   res$LAI[1] <- res$Wl[1] * SLA
 
-  # SPREADSHEET ERROR
-  # res$phi_pau[1] <- phi_p * f_E * (1 - exp(-kP * res$LAI[1])) * (1 / (1 + (res$t[1] / A0.5)^4)) # SPREADSHEET ERROR
   res$phi_pau[1] <- phi_p * f_E * (1 - exp(-kP * res$LAI[1])) * (1 / (1 + ((res$t[1] + t_seedling_replant) / A0.5)^4))
 
   res$phi_pa_u[1] <- phi_p * (1 - (1 - exp(-kP * res$LAI[1]))) * (1 - exp(-kP * LAI_u))
@@ -204,8 +203,6 @@ run_3PG <- function(t_rotation = 50, # rotation length
       }
     }
 
-    # SPREADSHEET ERROR
-    # if (res$t[i] < (t_seedling_replant + leaf_long_onset)) { # Leaf longevity not yet relevant SPREADSHEET ERROR
     if ((res$t[i] + t_seedling_replant) < leaf_long_onset) { # Leaf longevity not yet relevant
       res$Wl[i] <- res$Wl[i-1] * (1 - res$thin[i]) + t_step * res$NPP[i-1] * pF
     } else { # Accounting for leaf longevity
@@ -213,8 +210,6 @@ run_3PG <- function(t_rotation = 50, # rotation length
     }
     res$LAI[i] <- res$Wl[i] * SLA
 
-    # SPREADSHEET ERROR
-    # res$phi_pau[i] <- phi_p * f_E * (1 - exp(-kP * res$LAI[i])) * (1 / (1 + (res$t[i] / A0.5)^4)) # SPREADSHEET ERROR
     res$phi_pau[i] <- phi_p * f_E * (1 - exp(-kP * res$LAI[i])) * (1 / (1 + ((res$t[i] + t_seedling_replant) / A0.5)^4))
 
     res$phi_pa_u[i] <- phi_p * (1 - (1 - exp(-kP * res$LAI[i]))) * (1 - exp(-kP * LAI_u))
@@ -264,8 +259,8 @@ if(0) {
   # Run 3PG for variety of YCs for illustrative plotting
 
   # Get 3PG templates
-  parms_3PG <- read_excel("Templates/3PG_parms.xlsx",
-                          sheet = "3PG_parms",
+  parms_3PG <- read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
+                          sheet = "3PG parms",
                           range = "A1:E24")
 
   species <- c("Scots_Pine", "Sitka_Spruce")
@@ -274,13 +269,11 @@ if(0) {
                                filter(complete.cases(.)) %>%
                                select(Var_name, all_of(species)))
 
-  f_E_coef <-  read_excel("Templates/f_E_coef.xlsx",
+  f_E_coef <-  read_excel("Templates/PEATREST_input_scenario_modelling.xlsx",
+                          sheet = "fE YC coefficients",
                           range = "A1:H7")
 
   # Extract input variables for easy access
-  # YC <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "YC") # if not passed by user, already computed elsewhere from Growth and yield tables
-  # Spp <- map(forestry.dat[grep("Area", names(forestry.dat))], .f = "species")
-
   YC <- c(6,8,10,12)
   Spp <- 2
 
