@@ -137,8 +137,8 @@ res <- getCarbonDf(S_forest,
 #   ggplot(aes(x=t, y=value, col=factor(Est), linetype=factor(Area))) +
 # geom_line()
 
-res %>%
-  filter(model=="Peatland")
+# res %>%
+#   filter(model=="Peatland")
 
 # Check no change in result
 res0 <- read.csv("../Data/res_final.csv")
