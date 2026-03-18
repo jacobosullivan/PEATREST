@@ -456,7 +456,7 @@ HarvestingManagementMod <- function(input.dat,
     rho_wp_a <- lapply(seq_along(C_forest[[x]]), FUN = function(y) {
       Spp_a <- species[Spp[[x]][1]]
       YC_a <- YC[[x]][y]
-      t_harv_a <- t_harv[[x]][y]
+      t_harv_a <- round(t_harv[[x]][y])
 
       ## Deal with missing YC values from GY table
       YC_avail <- unlist(input.dat$growthYield %>% filter(Spp == Spp_a) %>% select(YC) %>% unique())

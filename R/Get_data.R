@@ -22,7 +22,7 @@ getData <- function(path) {
 getForestryInputData <- function(path, df_struct) {
   df <- read_excel(path,
                    sheet = "Forestry input data",
-                   range = "C12:H260",
+                   range = "C4:H262",
                    col_names = c("Input.data", "Exp", "rem1", "Min", "rem2", "Max"))
 
   suppressWarnings(

@@ -9,16 +9,25 @@ CarbonMitigationMod <- function(res, sum_areas=T) {
 
   if (sum_areas) {
     res_sum <- res %>%
+      mutate(t = round(t)) %>%
       group_by(treatment, t, Est) %>%
       summarise(value = sum(value)) %>%
       mutate(Area = "All.areas")
   } else {
     res_sum <- res %>%
+      mutate(t = round(t)) %>%
       group_by(treatment, Area, t, Est) %>%
       summarise(value = sum(value))
   }
 
-  # THIS FAILS IF PEATLAND NEVER IMPROVES ON FLUXES FROM FORESTRY!
+  if (0) {
+
+    range((res %>%
+      filter(Est == "Exp" & treatment == "PR" & model == "Peatland"))$value)
+
+
+  }
+
   t_flux <- left_join(res_sum %>%
                         ungroup() %>%
                         filter(treatment=="CF") %>%
@@ -31,9 +40,9 @@ CarbonMitigationMod <- function(res, sum_areas=T) {
                         rename(PR = value),
                       by=c("Area", "t", "Est")) %>%
     mutate(dif = PR-CF) %>%
-    filter(dif >= 0 & !is.na(dif)) %>%
+    filter(!is.na(dif)) %>%
     group_by(Area, Est) %>%
-    summarise(t = min(t))
+    summarise(t = ifelse(max(dif) > 0, t[which(dif>0)[1]], NA))
 
   res_cs <- res_sum %>%
     filter(t >= 0) %>%
@@ -52,9 +61,9 @@ CarbonMitigationMod <- function(res, sum_areas=T) {
                            rename(PR_cs = value_cs),
                          by=c("Area", "t", "Est")) %>%
     mutate(dif_cs = PR_cs-CF_cs) %>%
-    filter(dif_cs >= 0) %>%
+    filter(!is.na(dif_cs)) %>%
     group_by(Area, Est) %>%
-    summarise(t = min(t))
+    summarise(t = ifelse(max(dif_cs) > 0, t[which(dif_cs>0)[1]], NA))
 
   bind_rows(t_flux %>% mutate(metric="t_flux"),
             t_payback %>% mutate(metric="t_payback"))
