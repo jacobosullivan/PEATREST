@@ -15,10 +15,10 @@ devtools::document()
 path <- "Templates/PEATREST_input_sensitivity_analysis.xlsx" # select user input spreadsheet
 
 input.dat <- getData(path)
-if (0) {
+if (1) {
   input.dat <- input.dat[-5] # drop area 2
 } else {
-  input.dat <- input.dat[-4] # drop area 2
+  input.dat <- input.dat[-4] # drop area 1
   names(input.dat)[4] <- "Area.1"
 }
 
@@ -279,11 +279,11 @@ if (1) {
   # Stop the cluster
   stopCluster(cl)
 
-  write.csv(sensitivity_resA, "../Data/sensitivity_res_relative_mitigation_Area2.csv", row.names = F)
+  write.csv(sensitivity_resA, "../Data/sensitivity_res_relative_mitigation_Area1.csv", row.names = F)
 
 } else {
 
-  sensitivity_res1 <- read.csv("../Data/sensitivity_res_relative_mitigation.csv")
+  sensitivity_res1 <- read.csv("../Data/sensitivity_res_relative_mitigation_Area1.csv")
   sensitivity_res2 <- read.csv("../Data/sensitivity_res_relative_mitigation_Area2.csv")
 
   sensitivity_res1$Area <- "Area.1"
@@ -297,10 +297,11 @@ sensitivity_res %>%
          t_payback = t_payback / (t_rest + t_fallow)) %>%
   select(YC, Area, t_flux, t_payback) %>%
   pivot_longer(cols = c(t_flux, t_payback), names_to = "metric", values_to = "value") %>%
+  filter(value < 5) %>%
   ggplot(aes(x=YC, y=value)) +
   geom_boxplot(aes(group = factor(YC))) +
-  geom_smooth(method="lm", se=F) +
-  facet_grid(Area ~ metric) +
+  # geom_smooth(method="lm", se=F) +
+  facet_grid(Area ~ metric, scales="free_y") +
   labs(y = "Relative mitigation time") +
   theme_bw()
 
