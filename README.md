@@ -33,3 +33,12 @@ To run the model the user must input the following:
 ### Model scheme
 
 ![](Figures/LCA_scheme.png "Schematic representation of the PEATREST LCS")
+
+### Implementation
+
+To run the PEATREST LCA, copy and modify the user input file Templates/PEATREST_input. Open the R script run/runPeatRest.R. Set the variable path to the location of the modified input file and run the script. This will implement the model and generate figures summarising the results. The main non-graphical output is a data frame with the following structure: 
+
+```{r}
+res <- read.csv("Templates/res_scenario_modelling_truncated.csv")
+head(res)
+```
