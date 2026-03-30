@@ -58,5 +58,5 @@ The 'Est' column takes a value of 'Exp', 'Min' or 'Max'. These are the expectati
 
 The 'source' column indicates the type of emissions/sequestration. For example 'S_forest' corresponds to forestry sequestration, 'L_harv' to harvesting emissions etc. These are consistent with the algebraic notation in the PEATREST paper.
 
-Finally, 'value' is the emission/sequestration in units t CO2 eq. 
+Finally, 'value' is the emission/sequestration in units t CO2 eq. By convention, positive values imply sequestration, negative values imply emissions.
 
