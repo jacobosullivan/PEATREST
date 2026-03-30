@@ -114,11 +114,6 @@ ForestSoilsEmissionsMod <- function(input.dat) {
   names(sigma_zR) <- c("Exp", "Min", "Max")
   r_CBiomass <- map(input.dat[grep("Area", names(input.dat))], .f = "r_CBiomass")
 
-  if (0) { # 3PG version
-    sigma_zR <- c(Scots_pine = 0.12,
-                  Sitka_spruce = 0.06) * 1000 # m3/kg Volume explored by 1kg of root biomass (taken from FR 3PG pars), converted to m3/t
-  }
-
   # Get rooting depths for water table estimates
   d_wt <- lapply(seq_along(YC), FUN = function(x) {
     d_wt_a <- lapply(seq_along(YC[[x]]), FUN = function(y) {
